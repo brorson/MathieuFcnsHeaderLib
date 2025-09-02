@@ -3,7 +3,6 @@
 
 #include "../config.h"
 #include "../error.h"
-#include "make_matrix.h"
 #include "matrix_utils.h"
 
 /*
@@ -26,7 +25,7 @@ namespace mathieu {
   N = matrix size (related to max order desired).
   q = shape parameter.
   Output:
-  A = recurrence matrix (callocated in caller).
+  A = recurrence matrix (must be calloc'ed in caller).
   Return:
   return code = 0 if OK.
   -------------------------------------------------*/
@@ -68,7 +67,7 @@ namespace mathieu {
   N = matrix size (related to max order desired).
   q = shape parameter.
   Output:
-  A = recurrence matrix (callocated in caller).
+  A = recurrence matrix (calloc in caller).
   Return:
   return code = 0 if OK.
   -------------------------------------------------*/
@@ -112,7 +111,7 @@ namespace mathieu {
   N = matrix size (related to max order desired).
   q = shape parameter.
   Output:
-  A = recurrence matrix (callocated in caller).
+  A = recurrence matrix (calloc in caller).
   Return:
   return code = 0 if OK.
   -------------------------------------------------*/
@@ -156,7 +155,7 @@ namespace mathieu {
   N = matrix size (related to max order desired).
   q = shape parameter.
   Output:
-  A = recurrence matrix (callocated in caller).
+  A = recurrence matrix (calloc in caller).
   Return:
   return code = 0 if OK.
   -------------------------------------------------*/
@@ -196,4 +195,4 @@ namespace mathieu {
 } // namespace mathieu
 } // namespace xsf
  
-#endif
+#endif   // #ifndef MAKE_MATRIX_H

@@ -5,9 +5,7 @@
 #include "../error.h"
 #include "make_matrix.h"
 #include "matrix_utils.h"
-//#include <cblas.h>
-//#include <lapacke.h>
-//#include <lapack.h>
+
 
 /*
  *
@@ -18,9 +16,6 @@
  * 
  */
 
-//#ifdef __cplusplus
-//extern "C" {
-//#endif
 
 /* DSYEV_ prototype */
 #ifdef __cplusplus
@@ -35,7 +30,6 @@ void dsyev_( char* jobz, char* uplo, int* n, double* a, int* lda,
 
 namespace xsf {
 namespace mathieu {
-
 
   //------------------------------------------------------
   int mathieu_a(int m, double q, double *a) {
@@ -56,7 +50,6 @@ namespace mathieu {
     // Do EVD
     if (m % 2 == 0) {
       // Even order m
-      //printf("Even m = %d\n", m);
       retcode = make_matrix_ee(N,q,A);
       if (retcode != 0){
 	free(A);
@@ -74,20 +67,16 @@ namespace mathieu {
 	int lwork = -1;
 	dsyev_( &V, &U, &N, A, &N, ww, &wkopt, &lwork, &retcode );
 	lwork = (int) wkopt;
-	// printf("mathieu_eigs, lwork = %d\n", lwork);
 	work = (double*)malloc( lwork*sizeof(double) );
 	/* Solve eigenproblem */
 	dsyev_( &V, &U, &N, A, &N, ww, work, &lwork, &retcode );
 	free(work);
       }
-      // I replaced LAPACKE call with above LAPACK call to integrate into Scipy.
-      // retcode = LAPACKE_dsyev_(LAPACK_ROW_MAJOR, 'N', 'U', N, A, N, ww);
       if (retcode != 0) {
 	free(A);
 	free(ww);
 	return SF_ERROR_NO_RESULT;
       }
-      //print_matrix(ww, N, 1);
       
       // Sort ww vector from lowest to highest
       quickSort(ww, 0, N-1);
@@ -99,7 +88,6 @@ namespace mathieu {
       
     } else {
       // Odd order m
-      //printf("Odd m = %d\n", d);      
       retcode = make_matrix_eo(N,q,A);
       if (retcode != 0) {
 	free(A);
@@ -117,20 +105,16 @@ namespace mathieu {
 	int lwork = -1;
 	dsyev_( &V, &U, &N, A, &N, ww, &wkopt, &lwork, &retcode );
 	lwork = (int) wkopt;
-	// printf("mathieu_eigs, lwork = %d\n", lwork);
 	work = (double*)malloc( lwork*sizeof(double) );
 	/* Solve eigenproblem */
 	dsyev_( &V, &U, &N, A, &N, ww, work, &lwork, &retcode );
 	free(work);
       }
-      // I replaced LAPACKE call with above LAPACK call to integrate into Scipy.
-      // retcode = LAPACKE_dsyev_(LAPACK_ROW_MAJOR, 'N', 'U', N, A, N, ww);
       if (retcode != 0) {
 	free(A);
 	free(ww);
 	return SF_ERROR_NO_RESULT;
       }
-      //print_matrix(ww, N, 1);
       
       // Sort ww vector from lowest to highest
       quickSort(ww, 0, N-1);
@@ -139,7 +123,6 @@ namespace mathieu {
       // Now figure out which one to return.
       int idx = (m-1)/2;
       *a = ww[idx];
-      
     }
 
     free(A);
@@ -167,7 +150,6 @@ namespace mathieu {
     // Do EVD
     if (m % 2 == 0) {
       // Even order m
-      //printf("Even m = %d\n", m);
       retcode = make_matrix_oe(N,q,B);
       if (retcode != 0) {
 	free(B);
@@ -185,20 +167,16 @@ namespace mathieu {
 	int lwork = -1;
 	dsyev_( &V, &U, &N, B, &N, ww, &wkopt, &lwork, &retcode );
 	lwork = (int) wkopt;
-	// printf("mathieu_eigs, lwork = %d\n", lwork);
 	work = (double*)malloc( lwork*sizeof(double) );
 	/* Solve eigenproblem */
 	dsyev_( &V, &U, &N, B, &N, ww, work, &lwork, &retcode );
 	free(work);
       }
-      // I replaced LAPACKE call with above LAPACK call to integrate into Scipy.
-      // retcode = LAPACKE_dsyev_(LAPACK_ROW_MAJOR, 'N', 'U', N, B, N, ww);
       if (retcode != 0) {
 	free(B);
 	free(ww);
 	return SF_ERROR_NO_RESULT;
       }
-      //print_matrix(ww, N, 1);
       
       // Sort ww vector from lowest to highest
       quickSort(ww, 0, N-1);
@@ -210,7 +188,6 @@ namespace mathieu {
       
     } else {
       // Odd order m
-      //printf("Odd m = %d\n", m);      
       retcode = make_matrix_oo(N,q,B);
       if (retcode != 0) {
 	free(B);
@@ -228,20 +205,16 @@ namespace mathieu {
 	int lwork = -1;
 	dsyev_( &V, &U, &N, B, &N, ww, &wkopt, &lwork, &retcode );
 	lwork = (int) wkopt;
-	// printf("mathieu_eigs, lwork = %d\n", lwork);
 	work = (double*)malloc( lwork*sizeof(double) );
 	/* Solve eigenproblem */
 	dsyev_( &V, &U, &N, B, &N, ww, work, &lwork, &retcode );
 	free(work);
       }
-      // I replaced LAPACKE call with above LAPACK call to integrate into Scipy.
-      // retcode = LAPACKE_dsyev_(LAPACK_ROW_MAJOR, 'N', 'U', N, B, N, ww);
       if (retcode != 0) {
 	free(B);
 	free(ww);
 	return SF_ERROR_NO_RESULT;
       }
-      //print_matrix(ww, N, 1);
       
       // Sort ww vector from lowest to highest
       quickSort(ww, 0, N-1);
@@ -261,8 +234,4 @@ namespace mathieu {
 } // namespace mathieu
 } // namespace xsf
 
-//#ifdef __cplusplus
-//}
-//#endif
-  
-#endif
+#endif // #ifndef MATHIEU_EIGS_H

@@ -5,10 +5,6 @@
 #include "../error.h"
 #include "make_matrix.h"
 #include "matrix_utils.h"
-#include "mathieu_coeffs.h"
-// #include <cblas.h>
-// #include <lapacke.h>
-// #include <lapack.h>
 
 #define SQRT2 1.414213562373095d
 
@@ -20,7 +16,6 @@
  * series computing the Mathieu fcns.
  * 
  */
-
 
 
 /* DSYEV_ prototype */
@@ -60,15 +55,14 @@ namespace mathieu {
     if (A == NULL) return SF_ERROR_MEMORY;
 
     // Do EVD
-    //printf("Even m = %d\n", m);
     retcode = make_matrix_ee(N,q,A);
     if (retcode != 0) {
       free(A);
       return SF_ERROR_NO_RESULT;
     }
-    //print_matrix(A, N, N);
-    //printf("---------------------------------------\n");
+
     {
+      // Work in local scope.
       char V[1] = {'V'};
       char U[1] = {'U'};      
       double wkopt;
@@ -84,14 +78,10 @@ namespace mathieu {
       dsyev_( V, U, &N, A, &N, AA, work, &lwork, &retcode );
       free(work);
     }
-    // I replaced LAPACKE call with above LAPACK call to integrate into Scipy.
-    // retcode = LAPACKE_dsyev_(LAPACK_ROW_MAJOR, 'V', 'L', N, A, N, AA);
     if (retcode != 0) {
 	free(A);
 	return SF_ERROR_NO_RESULT;
     }
-    //print_matrix(A, N, N);
-    //printf("---------------------------------------\n");    
     
     // Sort AA vector from lowest to highest
     // quickSort(AA, 0, N-1);
@@ -127,15 +117,13 @@ namespace mathieu {
     if (A == NULL) return SF_ERROR_MEMORY;
     
     // Do EVD
-    //printf("Odd m = %d\n", m);
     retcode = make_matrix_eo(N,q,A);
     if (retcode != 0) {
       free(A);
       return SF_ERROR_NO_RESULT;
     }
-    //print_matrix(A, N, N);
-    //printf("---------------------------------------\n");
     {
+      // Work in local scope.
       char V[1] = {'V'};
       char U[1] = {'U'};      
       double wkopt;
@@ -151,14 +139,10 @@ namespace mathieu {
       dsyev_( V, U, &N, A, &N, AA, work, &lwork, &retcode );
       free(work);
     }
-    // I replaced LAPACKE call with above LAPACK call to integrate into Scipy.
-    // retcode = LAPACKE_dsyev_(LAPACK_ROW_MAJOR, 'V', 'U', N, A, N, AA);
     if (retcode != 0) {
       free(A);
       return SF_ERROR_NO_RESULT;
     }
-    //print_matrix(A, N, N);
-    //printf("---------------------------------------\n");    
     
     // Sort AA vector from lowest to highest
     // quickSort(AA, 0, N-1);
@@ -200,15 +184,13 @@ namespace mathieu {
     if (A == NULL) return SF_ERROR_MEMORY;
 
     // Do EVD
-    //printf("Even m = %d\n", m);
     retcode = make_matrix_oe(N,q,A);
     if (retcode != 0) {
       free(A);
       return SF_ERROR_NO_RESULT;
     }
-    //print_matrix(A, N, N);
-    //printf("---------------------------------------\n");
     {
+      // Work in local scope.
       char V[1] = {'V'};
       char U[1] = {'U'};      
       double wkopt;
@@ -224,14 +206,10 @@ namespace mathieu {
       dsyev_( V, U, &N, A, &N, AA, work, &lwork, &retcode );
       free(work);
     }
-    // I replaced LAPACKE call with above LAPACK call to integrate into Scipy.
-    // retcode = LAPACKE_dsyev_(LAPACK_ROW_MAJOR, 'V', 'L', N, A, N, AA);
     if (retcode != 0) {
       free(A);
       return SF_ERROR_NO_RESULT;
     }
-    //print_matrix(A, N, N);
-    //printf("---------------------------------------\n");    
     
     // Sort AA vector from lowest to highest
     // quickSort(AA, 0, N-1);
@@ -264,15 +242,13 @@ namespace mathieu {
     if (A == NULL) return SF_ERROR_MEMORY;
     
     // Do EVD
-    //printf("Odd m = %d\n", m);
     retcode = make_matrix_oo(N,q,A);
     if (retcode != 0) {
       free(A);
       return SF_ERROR_NO_RESULT;
     }
-    //print_matrix(A, N, N);
-    //printf("---------------------------------------\n");
     {
+      // Work in local scope
       char V[1] = {'V'};
       char U[1] = {'U'};      
       double wkopt;
@@ -288,14 +264,10 @@ namespace mathieu {
       dsyev_( V, U, &N, A, &N, AA, work, &lwork, &retcode );
       free(work);
     }
-    // I replaced LAPACKE call with above LAPACK call to integrate into Scipy.
-    // retcode = LAPACKE_dsyev_(LAPACK_ROW_MAJOR, 'V', 'U', N, A, N, AA);
     if (retcode != 0) {
       free(A);
       return SF_ERROR_NO_RESULT;
     }
-    //print_matrix(A, N, N);
-    //printf("---------------------------------------\n");    
     
     // Sort AA vector from lowest to highest
     // quickSort(AA, 0, N-1);
@@ -317,8 +289,4 @@ namespace mathieu {
 } // namespace mathieu
 } // namespace xsf
 
-//#ifdef __cplusplus
-//}
-//#endif
- 
-#endif
+#endif  // #ifndef MATHIEU_COEFFS_H

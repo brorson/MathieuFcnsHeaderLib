@@ -14,6 +14,7 @@
 
 // Macros to extract matrix index and element.
 // Matrix is NxN, i = row idx, j = col idx.
+// MATRIX_IDX is where col major format is enforced.
 #define MATRIX_IDX(N, I, J) (((N)*(I)) + (J))
 #define MATRIX_ELEMENT(A, m, n, i, j) A[ MATRIX_IDX(n, i, j) ]
 
@@ -43,63 +44,6 @@ void print_matrix(const double* A, int m, int n) {
       }
       printf("\n");
    }
-}
-
-
-//-----------------------------------------------------
-void print_matrix_linear(const double* A, int m, int n) {
-  // Prints matrix as one long, linear object.
-  int i;
-  for (i = 0; i < m*n; i++) {
-    printf("%8.4f\n", A[i]);
-  }
-}
-
-
-//-----------------------------------------------------
-void zeros(int m, int n, double *A) {
-  int i, j;
-  for (j = 0; j < n; j++) {
-    for (i = 0; i < m; i++) {
-      MATRIX_ELEMENT(A, m, n, i, j) = 0.0;
-    }
-  }
-}
-
-
-//-----------------------------------------------------
-void linspace(double x0, double x1, int N, double *v) {
-  // Returns vector v with N values from x0 to x1
-  int i;
-  double dx;
-
-  dx = (x1-x0)/(N-1);
-  for (i = 0; i < N; i++) {
-    v[i] = x0 + i*dx;
-  }
-}
-
-
-//-----------------------------------------------------
-int maxeltf(int N, double *u) {
-  // Given double vector u with N elements, return the
-  // index of the largest element.
-  // This is a dumb linear search O(N).  But for small N
-  // it's quick and dirty.  For large N I should write a
-  // binary search.
-  int i, imax;
-  double umax;
-
-  umax = -INFINITY;
-  imax = -1;  // Initialize to bogus value in case it doesn't get set.
-
-  for (i = 0; i < N; i++) {
-    if (u[i] > umax) {
-      umax = u[i];
-      imax = i;
-    }
-  }
-  return imax;
 }
 
 
@@ -145,4 +89,4 @@ void quickSort(double *arr, int low, int high) {
 } // namespace xsf
 
  
-#endif
+#endif  // #ifndef MATRIX_UTILS_H

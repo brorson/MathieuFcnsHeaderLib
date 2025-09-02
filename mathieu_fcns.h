@@ -3,11 +3,9 @@
 
 #include "../config.h"
 #include "../error.h"
+#include <math.h>
 #include "matrix_utils.h"
 #include "mathieu_coeffs.h"
-// #include <cblas.h>
-// #include <lapacke.h>
-#include <math.h>
 #include "besseljyd.h"
 
 
@@ -38,7 +36,8 @@ namespace mathieu {
 
     int retcode = SF_ERROR_OK;
 
-    // Check input domain and flag any problems
+    // Check input domain and flag any problems.
+    // abs(q) > 1000 leads to low accuracy.
     if (abs(q)>1.0e3d) retcode = SF_ERROR_LOSS;
     
     // I find the peak Fourier coeff tracks m.  Therefore,
@@ -50,7 +49,6 @@ namespace mathieu {
     // Use different coeffs depending upon whether m is even or odd.
     if (m % 2 == 0) {
       // Even
-      //printf("Even Mathieu ce, m = %d\n", m);
 
       // Get coeff vector for even ce
       double *AA = (double *) calloc(N, sizeof(double));
@@ -61,14 +59,13 @@ namespace mathieu {
 	return retcode;
       }
       
-      // Variables used in summing the Fourier series.
+      // Local scope variables used in summing the Fourier series.
       double tt, td, cep, cem, cedp, cedm;
+      cem = 0.0d; cep = 0.0d; cedm = 0.0d; cedp = 0.0d;
       
       // Sum from smallest to largest coeff.
-      cem = 0.0d; cep = 0.0d; cedm = 0.0d; cedp = 0.0d;
       for (int k=(N-1); k>=0 ; k--) {
 	tt = AA[k]*cos(2.0d*k*v); // Term for Mathieu ce
-	//printf("k = %d, tt = %e\n", k, tt);
 	if (tt<0) {
 	  cem = cem + tt;  // Neg running sum
 	} else {
@@ -99,7 +96,6 @@ namespace mathieu {
       
     } else {
       // Odd
-      //printf("Odd Mathieu ce, m = %d\n", m);
 
       // Get coeff vector for odd ce
       double *AA = (double *) calloc(N, sizeof(double));
@@ -110,15 +106,13 @@ namespace mathieu {
 	return retcode;
       }
       
-      // Variables used in summing the Fourier series.
+      // Local scope variables used in summing the Fourier series.
       double tt, td, cep, cem, cedp, cedm;
-      
-      // Perform Fourier sum on k = 0, 2, 4, 6, ...
-      // Sum from smallest to largest coeff.
       cem = 0.0d; cep = 0.0d; cedm = 0.0d; cedp = 0.0d;
+      
+      // Perform Fourier sum on k = 0, 2, 4, ...
       for (int k=(N-1); k>=0 ; k--) {
 	tt = AA[k]*cos((2.0d*k+1.0d)*v);  // Term for Mathieu ce
-	//printf("k = %d, tt = %e\n", k, tt);
 	if (tt<0) {
 	  cem = cem + tt;  // Neg running sum
 	} else {
@@ -168,7 +162,8 @@ namespace mathieu {
 
     int retcode = SF_ERROR_OK;
 
-    // Check input domain and flag any problems
+    // Check input domain and flag any problems.
+    // q>1000 leads to inaccuracy.
     if (abs(q)>1.0e3d) retcode = SF_ERROR_LOSS;
     
     // I find the peak Fourier coeff tracks m.  Therefore,
@@ -180,7 +175,6 @@ namespace mathieu {
     // Use different coeffs depending upon whether m is even or odd.
     if (m % 2 == 0) {
       // Even
-      //printf("Even Mathieu se, m = %d\n", m);
 
       // Get coeff vector for even se
       double *BB = (double *) calloc(N, sizeof(double));
@@ -191,11 +185,11 @@ namespace mathieu {
 	return retcode;
       }
       
-      // Variables used in summing the Fourier series.
+      // Local scope variables used in summing the Fourier series.
       double tt, td, sep, sem, sedp, sedm;
+      sem = 0.0d; sep = 0.0d; sedm = 0.0d; sedp = 0.0d;
       
       // Sum from smallest to largest coeff.
-      sem = 0.0d; sep = 0.0d; sedm = 0.0d; sedp = 0.0d;
       for (int k=N; k>=1 ; k--) {
 	tt = BB[k-1]*sin(2.0d*k*v); // Mathieu se term
 	if (tt<0) {
@@ -228,7 +222,6 @@ namespace mathieu {
       free(BB);
     } else {
       // Odd
-      //printf("Odd Mathieu se, m = %d\n", m);
 
       // Get coeff vector for odd se
       double *BB = (double *) calloc(N, sizeof(double));
@@ -239,11 +232,11 @@ namespace mathieu {
 	return retcode;
       }
       
-      // Variables used in summing the Fourier series.
+      // Local scope variables used in summing the Fourier series.
       double tt, td, sep, sem, sedp, sedm;
+      sem = 0.0d; sep = 0.0d; sedm = 0.0d; sedp = 0.0d;
       
       // Sum from smallest to largest coeff.
-      sem = 0.0d; sep = 0.0d; sedm = 0.0d; sedp = 0.0d;
       for (int k=(N-1); k>=0 ; k--) {
 	tt = BB[k]*sin((2.0d*k+1.0d)*v);  // Mathieu se term
 	if (tt<0) {
@@ -297,10 +290,9 @@ namespace mathieu {
     int c;        // Offset used in adaptive computation.
 
     // Check input domain and flag any problems
-    if (q<0) return SF_ERROR_DOMAIN;
-    if (abs(q)>1.0e3d) retcode = SF_ERROR_LOSS;
+    if (q<0) return SF_ERROR_DOMAIN; // q<0 is unimplemented
+    if (abs(q)>1.0e3d) retcode = SF_ERROR_LOSS;  // q>1000 is inaccurate
     if (m>15 && q>0.1d) retcode = SF_ERROR_LOSS;
-
 
     // I find the peak Fourier coeff tracks m.  Therefore,
     // adjust the matrix size based on order m.  Later make this
@@ -316,7 +308,9 @@ namespace mathieu {
     double t = sqq*exppu;
       
     // This is used for the adaptive computation.
-    // I set the offset used in Bessel fcn depending upon order m.
+    // I set the offset used in Bessel sum depending upon order m.
+    // The offset depends upon exactly where in the [q,m] plane lives
+    // the input args.
     // The idea comes from the book "Accurate Computation of Mathieu Functions",
     // Malcolm M. Bibby & Andrew F. Peterson.  Also used in the paper
     // "Accurate calculation of the modified Mathieu functions of
@@ -331,12 +325,10 @@ namespace mathieu {
 	} else {
       c = 0;
     }
-    //printf("c = %d\n", c);
     
     // Use different coeffs depending upon whether m is even or odd.
     if (m % 2 == 0) {
       // Even
-      // printf("Even Mathieu modmc1, m = %d\n", m);
 
       // Get coeff vector for even modmc1
       double *AA = (double *) calloc(N, sizeof(double));
@@ -347,14 +339,14 @@ namespace mathieu {
 	return retcode;
       }
       
-      // Variables used in summing the Fourier series.
+      // Local scope variables used in summing the Fourier series.
       // These are Float128 since some of the terms are near
-      // equal amplitude, but different sign.
+      // equal amplitude, but different sign, and I want to
+      // avoid catastrophic cancellation.
       _Float128 mc1p, mc1m, mc1dp, mc1dm;
+      mc1p = 0.0; mc1m = 0.0; mc1dp = 0.0; mc1dm = 0.0;
       
       // Sum from smallest to largest coeff.
-      mc1p = 0.0; mc1m = 0.0; mc1dp = 0.0; mc1dm = 0.0;
-      //lmc1 = 0.0; lmc1d = 0.0;
       for (int k=(N-1); k>=0 ; k--) {
 	if (c==0) {
 	  // Non-adaptive calc
@@ -362,8 +354,6 @@ namespace mathieu {
 	  double Jkt = besselj(k,t);
 	  double Jdks = besseljd(k,s);
 	  double Jdkt = besseljd(k,t);
-	  //printf("Jks = %20.17e\n", Jks);
-	  //printf("Jkt = %20.17e\n", Jkt);
 
 	  _Float128 tt = AA[k]*(Jks*Jkt);
 	  _Float128 ttd = AA[k]*(exppu*Jks*Jdkt - expmu*Jdks*Jkt);
@@ -453,7 +443,6 @@ namespace mathieu {
       
     } else {
       // Odd -- m = 1, 3, 5, 7 ...
-      // printf("Odd Mathieu modmc1, m = %d\n", m);
 
       // Get coeff vector for even modmc1
       double *AA = (double *) calloc(N, sizeof(double));
@@ -466,10 +455,9 @@ namespace mathieu {
       
       // Variables used in summing the Fourier series.
       _Float128 mc1p, mc1m, mc1dp, mc1dm;
+      mc1p = 0.0; mc1m = 0.0; mc1dp = 0.0; mc1dm = 0.0;
       
       // Sum from smallest to largest coeff.
-      mc1p = 0.0; mc1m = 0.0; mc1dp = 0.0; mc1dm = 0.0;
-
       for (int k=(N-1); k>=0 ; k--) {
 	if (c==0) {
 	  // Non-adaptive calc
@@ -477,11 +465,6 @@ namespace mathieu {
 	  double Jkp1s = besselj(k+1,s);
 	  double Jkt = besselj(k,t);
 	  double Jkp1t = besselj(k+1,t);
-  
-	  //printf("Jks = %20.17e\n", Jks);
-	  //printf("Jkp1s = %20.17e\n", Jkp1s);	  
-	  //printf("Jkt = %20.17e\n", Jkt);
-	  //printf("Jkp1t = %20.17e\n", Jkp1t);	  
 
 	  double Jdks = besseljd(k,s);
 	  double Jdkp1s = besseljd(k+1,s);
@@ -560,7 +543,6 @@ namespace mathieu {
 
       // Sum pos and neg terms to get final answer
       *mc1 = static_cast<double>(mc1p+mc1m);
-      //printf("mc1p = %20.17e, mc1m = %20.17e, *mc1 = %20.17e\n", (double) mc1p, (double) mc1m, (double) *mc1);
       *mc1d = static_cast<double>(mc1dp+mc1dm);
       
       // Do normalization.  Note normalization depends upon c.
@@ -630,12 +612,10 @@ namespace mathieu {
 	} else {
       c = 0;
     }
-    //printf("c = %d\n", c);
     
     // Use different coeffs depending upon whether m is even or odd.
     if (m % 2 == 0) {
       // Even
-      // printf("Even Mathieu modms1, m = %d\n", m);
 
       // Get coeff vector for even modms1
       double *BB = (double *) calloc(N, sizeof(double));
@@ -650,9 +630,9 @@ namespace mathieu {
       // These are Float128 since some of the terms are near
       // equal amplitude, but different sign.
       _Float128 ms1p, ms1m, ms1dp, ms1dm;
+      ms1p = 0.0; ms1m = 0.0; ms1dp = 0.0; ms1dm = 0.0;
       
       // Sum from smallest to largest coeff.
-      ms1p = 0.0; ms1m = 0.0; ms1dp = 0.0; ms1dm = 0.0;
       for (int k=(N-1); k>=0 ; k--) {
 	if (c==0) {
 	  // Non-adaptive calc
@@ -756,7 +736,6 @@ namespace mathieu {
 
     } else {
       // Odd -- m = 1, 3, 5, 7 ...
-      // printf("Odd Mathieu modms1, m = %d\n", m);
 
       // Get coeff vector for even modms1
       double *BB = (double *) calloc(N, sizeof(double));
@@ -769,10 +748,9 @@ namespace mathieu {
       
       // Variables used in summing the Fourier series.
       _Float128 ms1p, ms1m, ms1dp, ms1dm;
+      ms1p = 0.0; ms1m = 0.0; ms1dp = 0.0; ms1dm = 0.0;
       
       // Sum from smallest to largest coeff.
-      ms1p = 0.0; ms1m = 0.0; ms1dp = 0.0; ms1dm = 0.0;
-
       for (int k=(N-1); k>=0 ; k--) {
 	if (c==0) {
 	  // Non-adaptive calc
@@ -858,7 +836,6 @@ namespace mathieu {
 
       // Sum pos and neg terms to get final answer
       *ms1 = static_cast<double>(ms1p+ms1m);
-      //printf("mc1p = %20.17e, mc1m = %20.17e, *mc1 = %20.17e\n", (double) mc1p, (double) mc1m, (double) *mc1);
       *ms1d = static_cast<double>(ms1dp+ms1dm);
       
       // Do normalization.  Note normalization depends upon c.
@@ -928,12 +905,10 @@ namespace mathieu {
 	} else {
       c = 0;
     }
-    //printf("c = %d\n", c);
     
     // Use different coeffs depending upon whether m is even or odd.
     if (m % 2 == 0) {
       // Even
-      // printf("Even Mathieu modmc2, m = %d\n", m);
 
       // Get coeff vector for even modmc2
       double *AA = (double *) calloc(N, sizeof(double));
@@ -1047,7 +1022,6 @@ namespace mathieu {
       
     } else {
       // Odd -- m = 1, 3, 5, 7 ...
-      // printf("Odd Mathieu modmc2, m = %d\n", m);
 
       // Get coeff vector for odd mc2
       double *AA = (double *) calloc(N, sizeof(double));
@@ -1060,10 +1034,9 @@ namespace mathieu {
       
       // Variables used in summing the Fourier series.
       _Float128 mc2p, mc2m, mc2dp, mc2dm;
+      mc2p = 0.0; mc2m = 0.0; mc2dp = 0.0; mc2dm = 0.0;
       
       // Sum from smallest to largest coeff.
-      mc2p = 0.0; mc2m = 0.0; mc2dp = 0.0; mc2dm = 0.0;
-
       for (int k=(N-1); k>=0 ; k--) {
 	if (c==0) {
 	  // Non-adaptive calc
@@ -1149,7 +1122,6 @@ namespace mathieu {
 
       // Sum pos and neg terms to get final answer
       *mc2 = static_cast<double>(mc2p+mc2m);
-      //printf("mc1p = %20.17e, mc1m = %20.17e, *mc1 = %20.17e\n", (double) mc1p, (double) mc1m, (double) *mc1);
       *mc2d = static_cast<double>(mc2dp+mc2dm);
       
       // Do normalization.  Note normalization depends upon c.
@@ -1220,12 +1192,10 @@ namespace mathieu {
       c = 0;
     }
     c = 0;
-    //printf("c = %d\n", c);
     
     // Use different coeffs depending upon whether m is even or odd.
     if (m % 2 == 0) {
       // Even
-      // printf("Even Mathieu modms2, m = %d\n", m);
 
       // Get coeff vector for even modms2
       double *BB = (double *) calloc(N, sizeof(double));
@@ -1240,9 +1210,9 @@ namespace mathieu {
       // These are Float128 since some of the terms are near
       // equal amplitude, but different sign.
       _Float128 ms2p, ms2m, ms2dp, ms2dm;
+      ms2p = 0.0; ms2m = 0.0; ms2dp = 0.0; ms2dm = 0.0;
       
       // Sum from smallest to largest coeff.
-      ms2p = 0.0; ms2m = 0.0; ms2dp = 0.0; ms2dm = 0.0;
       for (int k=(N-1); k>=0 ; k--) {
 	if (c==0) {
 	  // Non-adaptive calc
@@ -1255,7 +1225,6 @@ namespace mathieu {
 	  double Ydkp2t = besselyd(k+2,t);
 	  double Jdkp2s = besseljd(k+2,s);
 	  double Ydkt = besselyd(k,t);
-
 
 	  _Float128 tt = BB[k]*(Jks*Ykp2t - Jkp2s*Ykt);
 	  _Float128 ttd = BB[k]*
@@ -1347,7 +1316,6 @@ namespace mathieu {
 
     } else {
       // Odd -- m = 1, 3, 5, 7 ...
-      // printf("Odd Mathieu modms2, m = %d\n", m);
 
       // Get coeff vector for even modms2
       double *BB = (double *) calloc(N, sizeof(double));
@@ -1360,10 +1328,9 @@ namespace mathieu {
       
       // Variables used in summing the Fourier series.
       _Float128 ms2p, ms2m, ms2dp, ms2dm;
+      ms2p = 0.0; ms2m = 0.0; ms2dp = 0.0; ms2dm = 0.0;
       
       // Sum from smallest to largest coeff.
-      ms2p = 0.0; ms2m = 0.0; ms2dp = 0.0; ms2dm = 0.0;
-
       for (int k=(N-1); k>=0 ; k--) {
 	if (c==0) {
 	  // Non-adaptive calc
@@ -1449,7 +1416,6 @@ namespace mathieu {
 
       // Sum pos and neg terms to get final answer
       *ms2 = static_cast<double>(ms2p+ms2m);
-      //printf("ms2p = %20.17e, ms2m = %20.17e, *ms2 = %20.17e\n", (double) ms2p, (double) ms2m, (double) *ms2);
       *ms2d = static_cast<double>(ms2dp+ms2dm);
       
       // Do normalization.  Note normalization depends upon c.
@@ -1473,5 +1439,5 @@ namespace mathieu {
 } // namespace mathieu
 } // namespace xsf
 
-#endif
+#endif  // #ifndef MATHIEU_FCNS_H
 

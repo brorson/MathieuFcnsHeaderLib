@@ -82,4 +82,4 @@ namespace mathieu {
 } // namespace xsf
 } // namespace mathieu
 
-#endif
+#endif  // #ifndef BESSELJYD_H
