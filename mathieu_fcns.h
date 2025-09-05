@@ -37,8 +37,15 @@ namespace mathieu {
     int retcode = SF_ERROR_OK;
 
     // Check input domain and flag any problems.
+    if (m>500) {
+      // Don't support absurdly larger orders for now.
+      *ce = std::numeric_limits<double>::quiet_NaN();
+      *ced = std::numeric_limits<double>::quiet_NaN();
+      return SF_ERROR_DOMAIN;
+    }
     // abs(q) > 1000 leads to low accuracy.
     if (abs(q)>1.0e3d) retcode = SF_ERROR_LOSS;
+      
     
     // I find the peak Fourier coeff tracks m.  Therefore,
     // adjust the matrix size based on order m.  Later make this
@@ -163,6 +170,12 @@ namespace mathieu {
     int retcode = SF_ERROR_OK;
 
     // Check input domain and flag any problems.
+    if (m>500) {
+      // Don't support absurdly larger orders for now.
+      *se = std::numeric_limits<double>::quiet_NaN();
+      *sed = std::numeric_limits<double>::quiet_NaN();
+      return SF_ERROR_DOMAIN;
+    }
     // q>1000 leads to inaccuracy.
     if (abs(q)>1.0e3d) retcode = SF_ERROR_LOSS;
     
@@ -290,6 +303,12 @@ namespace mathieu {
     int c;        // Offset used in adaptive computation.
 
     // Check input domain and flag any problems
+    if (m>500) {
+      // Don't support absurdly larger orders for now.
+      *mc1 = std::numeric_limits<double>::quiet_NaN();
+      *mc1d = std::numeric_limits<double>::quiet_NaN();
+      return SF_ERROR_DOMAIN;
+    }
     if (q<0) return SF_ERROR_DOMAIN; // q<0 is unimplemented
     if (abs(q)>1.0e3d) retcode = SF_ERROR_LOSS;  // q>1000 is inaccurate
     if (m>15 && q>0.1d) retcode = SF_ERROR_LOSS;
@@ -579,7 +598,13 @@ namespace mathieu {
     int c;        // Offset used in adaptive computation.
     
     // Check input domain and flag any problems
-    if (q<0) return SF_ERROR_DOMAIN;
+    if (m>500) {
+      // Don't support absurdly larger orders for now.
+      *ms1 = std::numeric_limits<double>::quiet_NaN();
+      *ms1d = std::numeric_limits<double>::quiet_NaN();
+      return SF_ERROR_DOMAIN;
+    }
+    if (q<0) return SF_ERROR_DOMAIN;  // q < 0 is currently unimplemented
     if (abs(q)>1.0e3d) retcode = SF_ERROR_LOSS;
     if (m>15 && q>0.1d) retcode = SF_ERROR_LOSS;
 
@@ -872,7 +897,13 @@ namespace mathieu {
     int c;        // Offset used in adaptive computation.
     
     // Check input domain and flag any problems
-    if (q<0) return SF_ERROR_DOMAIN;
+    if (m>500) {
+      // Don't support absurdly larger orders for now.
+      *mc2 = std::numeric_limits<double>::quiet_NaN();
+      *mc2d = std::numeric_limits<double>::quiet_NaN();
+      return SF_ERROR_DOMAIN;
+    }
+    if (q<0) return SF_ERROR_DOMAIN;  // q<0 is currently unimplemented
     if (abs(q)>1.0e3d) retcode = SF_ERROR_LOSS;
     if (m>15 && q>0.1d) retcode = SF_ERROR_LOSS;
 
@@ -1158,7 +1189,13 @@ namespace mathieu {
     int c;        // Offset used in adaptive computation.
     
     // Check input domain and flag any problems
-    if (q<0) return SF_ERROR_DOMAIN;
+    if (m>500) {
+      // Don't support absurdly larger orders for now.
+      *ms2 = std::numeric_limits<double>::quiet_NaN();
+      *ms2d = std::numeric_limits<double>::quiet_NaN();
+      return SF_ERROR_DOMAIN;
+    }
+    if (q<0) return SF_ERROR_DOMAIN;  // q<0 is currently unimplemented
     if (abs(q)>1.0e3d) retcode = SF_ERROR_LOSS;
     if (m>15 && q>0.1d) retcode = SF_ERROR_LOSS;
 
