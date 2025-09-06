@@ -13,6 +13,8 @@
  * of the Mathieu functions for Scipy.  This file holds the functions
  * which return the Mathieu eigenvalues (characteristic values) a and
  * b as a function of parameter q.
+ *
+ * Stuart Brorson, summer 2025.
  * 
  */
 

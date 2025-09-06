@@ -15,6 +15,8 @@
  * of the Mathieu functions for Scipy.  This file holds the function
  * implementations themselves.  The prototype was written in Matlab
  * and validated.  This is a translation from Matlab to C.
+ *
+ * Stuart Brorson, Summer 2025.
  * 
  */
 
