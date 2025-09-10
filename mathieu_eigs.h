@@ -49,14 +49,14 @@ namespace mathieu {
     // Allocate recursion matrix
     double *A = (double *) calloc(N*N, sizeof(double));
     if (A == NULL) {
-      *a =std::numeric_limits<double>::quiet_NaN();
+      *a = std::numeric_limits<double>::quiet_NaN();
       return SF_ERROR_MEMORY;
     }
  
     // Allocate vector for eigenvalues
     double *ww = (double *) calloc(N, sizeof(double));
     if (ww == NULL) {
-      *a =std::numeric_limits<double>::quiet_NaN();      
+      *a = std::numeric_limits<double>::quiet_NaN();      
       free(A);
       return SF_ERROR_MEMORY;
     }
@@ -66,7 +66,7 @@ namespace mathieu {
       // Even order m
       retcode = make_matrix_ee(N,q,A);
       if (retcode != 0){
-	*a =std::numeric_limits<double>::quiet_NaN();	
+	*a = std::numeric_limits<double>::quiet_NaN();	
 	free(A);
 	free(ww);
 	return retcode;
@@ -88,7 +88,7 @@ namespace mathieu {
 	free(work);
       }
       if (retcode != 0) {
-	*a =std::numeric_limits<double>::quiet_NaN();	
+	*a = std::numeric_limits<double>::quiet_NaN();	
 	free(A);
 	free(ww);
 	return SF_ERROR_NO_RESULT;
@@ -106,7 +106,7 @@ namespace mathieu {
       // Odd order m
       retcode = make_matrix_eo(N,q,A);
       if (retcode != 0) {
-	*a =std::numeric_limits<double>::quiet_NaN();	
+	*a = std::numeric_limits<double>::quiet_NaN();	
 	free(A);
 	free(ww);
 	return retcode;
@@ -128,7 +128,7 @@ namespace mathieu {
 	free(work);
       }
       if (retcode != 0) {
-	*a =std::numeric_limits<double>::quiet_NaN();	
+	*a = std::numeric_limits<double>::quiet_NaN();	
 	free(A);
 	free(ww);
 	return SF_ERROR_NO_RESULT;
@@ -164,14 +164,14 @@ namespace mathieu {
     // Allocate recursion matrix
     double *B = (double *) calloc(N*N, sizeof(double));
     if (B == NULL) {
-      *b =std::numeric_limits<double>::quiet_NaN();
+      *b = std::numeric_limits<double>::quiet_NaN();
       return SF_ERROR_MEMORY;
     }
 
     // Allocate vector for eigenvalues
     double *ww = (double *) calloc(N, sizeof(double));
     if (ww == NULL) {
-      *b =std::numeric_limits<double>::quiet_NaN();      
+      *b = std::numeric_limits<double>::quiet_NaN();      
       free(B);
       return SF_ERROR_MEMORY;
     }
@@ -181,7 +181,7 @@ namespace mathieu {
       // Even order m
       retcode = make_matrix_oe(N,q,B);
       if (retcode != 0) {
-	*b =std::numeric_limits<double>::quiet_NaN();	
+	*b = std::numeric_limits<double>::quiet_NaN();	
 	free(B);
 	free(ww);
 	return retcode;
@@ -203,7 +203,7 @@ namespace mathieu {
 	free(work);
       }
       if (retcode != 0) {
-	*b =std::numeric_limits<double>::quiet_NaN();	
+	*b = std::numeric_limits<double>::quiet_NaN();	
 	free(B);
 	free(ww);
 	return SF_ERROR_NO_RESULT;
@@ -221,7 +221,7 @@ namespace mathieu {
       // Odd order m
       retcode = make_matrix_oo(N,q,B);      
       if (retcode != 0) {
-	*b =std::numeric_limits<double>::quiet_NaN();	
+	*b = std::numeric_limits<double>::quiet_NaN();	
 	free(B);
 	free(ww);
 	return retcode;
@@ -243,7 +243,7 @@ namespace mathieu {
 	free(work);
       }
       if (retcode != 0) {
-	*b =std::numeric_limits<double>::quiet_NaN();	
+	*b = std::numeric_limits<double>::quiet_NaN();	
 	free(B);
 	free(ww);
 	return SF_ERROR_NO_RESULT;

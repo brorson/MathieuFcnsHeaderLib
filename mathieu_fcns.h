@@ -34,7 +34,7 @@ namespace mathieu {
     // ce = value of fcn for these inputs (scalar)
     // ced = value of fcn deriv w.r.t. v for these inputs (scalar)
     // Return code:  
-    // Success = 0
+    // Codes in error.h.
 
     int retcode = SF_ERROR_OK;
 
@@ -61,27 +61,34 @@ namespace mathieu {
 
       // Get coeff vector for even ce
       double *AA = (double *) calloc(N, sizeof(double));
-      if (AA == NULL) return SF_ERROR_MEMORY;
+      if (AA == NULL) {
+	*ce = std::numeric_limits<double>::quiet_NaN();
+	*ced = std::numeric_limits<double>::quiet_NaN();
+	return  SF_ERROR_MEMORY;
+      }
+      
       retcode = mathieu_coeffs_ee(N,q,m, AA);
       if (retcode != SF_ERROR_OK) {
+	*ce = std::numeric_limits<double>::quiet_NaN();
+	*ced = std::numeric_limits<double>::quiet_NaN();
 	free(AA);
 	return retcode;
       }
       
       // Local scope variables used in summing the Fourier series.
       double tt, td, cep, cem, cedp, cedm;
-      cem = 0.0d; cep = 0.0d; cedm = 0.0d; cedp = 0.0d;
+      cem = 0.0; cep = 0.0; cedm = 0.0; cedp = 0.0;
       
       // Sum from smallest to largest coeff.
       for (int k=(N-1); k>=0 ; k--) {
-	tt = AA[k]*cos(2.0d*k*v); // Term for Mathieu ce
+	tt = AA[k]*cos(2.0*k*v); // Term for Mathieu ce
 	if (tt<0) {
 	  cem = cem + tt;  // Neg running sum
 	} else {
 	  cep = cep + tt;  // Pos running sum
 	}
 
-	td = -2.0d*k*AA[k]*sin(2.0d*k*v); // Term for deriv
+	td = -2.0*k*AA[k]*sin(2.0*k*v); // Term for deriv
 	if (td<0) {
 	  cedm = cedm + td;
 	} else {
@@ -95,7 +102,7 @@ namespace mathieu {
 
       // Hack -- this makes sure the fcn has the right overall sign for q<0.
       // Someday combine this with the above sums into the same for loop.
-      double s = 0.0d;
+      double s = 0.0;
       for (int l = 0; l<N; l++) {
 	s = s + AA[l];
       }
@@ -108,27 +115,34 @@ namespace mathieu {
 
       // Get coeff vector for odd ce
       double *AA = (double *) calloc(N, sizeof(double));
-      if (AA == NULL) return SF_ERROR_MEMORY;
+      if (AA == NULL) {
+	*ce = std::numeric_limits<double>::quiet_NaN();
+	*ced = std::numeric_limits<double>::quiet_NaN();
+	return  SF_ERROR_MEMORY;
+      }
+
       retcode = mathieu_coeffs_eo(N,q,m, AA);
       if (retcode != SF_ERROR_OK) {
+	*ce = std::numeric_limits<double>::quiet_NaN();
+	*ced = std::numeric_limits<double>::quiet_NaN();
 	free(AA);
 	return retcode;
       }
       
       // Local scope variables used in summing the Fourier series.
       double tt, td, cep, cem, cedp, cedm;
-      cem = 0.0d; cep = 0.0d; cedm = 0.0d; cedp = 0.0d;
+      cem = 0.0; cep = 0.0; cedm = 0.0; cedp = 0.0;
       
       // Perform Fourier sum on k = 0, 2, 4, ...
       for (int k=(N-1); k>=0 ; k--) {
-	tt = AA[k]*cos((2.0d*k+1.0d)*v);  // Term for Mathieu ce
+	tt = AA[k]*cos((2.0*k+1.0)*v);  // Term for Mathieu ce
 	if (tt<0) {
 	  cem = cem + tt;  // Neg running sum
 	} else {
 	  cep = cep + tt;  // Pos running sum
 	}
 
-	td = -(2.0d*k+1.0d)*AA[k]*sin((2.0d*k+1.0d)*v); // Deriv.
+	td = -(2.0*k+1.0)*AA[k]*sin((2.0*k+1.0)*v); // Deriv.
 	if (td<0) {
 	  cedm = cedm + td;
 	} else {
@@ -142,7 +156,7 @@ namespace mathieu {
 
       // Hack -- this makes sure the fcn has the right overall sign for q<0.
       // Someday combine this with the above sums into the same for loop.
-      double s = 0.0d;
+      double s = 0.0;
       for (int l = 0; l<N; l++) {
 	s = s + AA[l];
       }
@@ -193,27 +207,34 @@ namespace mathieu {
 
       // Get coeff vector for even se
       double *BB = (double *) calloc(N, sizeof(double));
-      if (BB == NULL) return SF_ERROR_MEMORY;
+      if (BB == NULL) {
+	*se = std::numeric_limits<double>::quiet_NaN();
+	*sed = std::numeric_limits<double>::quiet_NaN();
+	return  SF_ERROR_MEMORY;
+      }
+
       retcode = mathieu_coeffs_oe(N,q,m, BB);
       if (retcode != SF_ERROR_OK) {
+	*se = std::numeric_limits<double>::quiet_NaN();
+	*sed = std::numeric_limits<double>::quiet_NaN();
 	free(BB);
 	return retcode;
       }
       
       // Local scope variables used in summing the Fourier series.
       double tt, td, sep, sem, sedp, sedm;
-      sem = 0.0d; sep = 0.0d; sedm = 0.0d; sedp = 0.0d;
+      sem = 0.0; sep = 0.0; sedm = 0.0; sedp = 0.0;
       
       // Sum from smallest to largest coeff.
       for (int k=N; k>=1 ; k--) {
-	tt = BB[k-1]*sin(2.0d*k*v); // Mathieu se term
+	tt = BB[k-1]*sin(2.0*k*v); // Mathieu se term
 	if (tt<0) {
 	  sem = sem + tt;  // Neg running sum
 	} else {
 	  sep = sep + tt;  // Pos running sum
 	}
 
-	td = 2.0d*k*BB[k-1]*cos(2.0d*k*v); // Deriv term.
+	td = 2.0*k*BB[k-1]*cos(2.0*k*v); // Deriv term.
 	if (td<0) {
 	  sedm = sedm + td;
 	} else {
@@ -227,7 +248,7 @@ namespace mathieu {
 
       // Hack -- this makes sure the fcn has the right overall sign for q<0.
       // Someday combine this with the above sums into the same for loop.
-      double s = 0.0d;
+      double s = 0.0;
       for (int l = 0; l<N; l++) {
 	s = s + BB[l];
       }
@@ -240,27 +261,34 @@ namespace mathieu {
 
       // Get coeff vector for odd se
       double *BB = (double *) calloc(N, sizeof(double));
-      if (BB == NULL) return SF_ERROR_MEMORY;
+      if (BB == NULL) {
+	*se = std::numeric_limits<double>::quiet_NaN();
+	*sed = std::numeric_limits<double>::quiet_NaN();
+	return SF_ERROR_MEMORY;
+      }
+
       retcode = mathieu_coeffs_oo(N,q,m, BB);
       if (retcode != SF_ERROR_OK) {
+	*se = std::numeric_limits<double>::quiet_NaN();
+	*sed = std::numeric_limits<double>::quiet_NaN();
 	free(BB);
 	return retcode;
       }
       
       // Local scope variables used in summing the Fourier series.
       double tt, td, sep, sem, sedp, sedm;
-      sem = 0.0d; sep = 0.0d; sedm = 0.0d; sedp = 0.0d;
+      sem = 0.0; sep = 0.0; sedm = 0.0; sedp = 0.0;
       
       // Sum from smallest to largest coeff.
       for (int k=(N-1); k>=0 ; k--) {
-	tt = BB[k]*sin((2.0d*k+1.0d)*v);  // Mathieu se term
+	tt = BB[k]*sin((2.0*k+1.0)*v);  // Mathieu se term
 	if (tt<0) {
 	  sem = sem + tt;  // Neg running sum
 	} else {
 	  sep = sep + tt;  // Pos running sum
 	}
 
-	td = (2.0d*k+1.0d)*BB[k]*cos((2.0d*k+1.0d)*v);  // Deriv term.
+	td = (2.0*k+1.0)*BB[k]*cos((2.0*k+1.0)*v);  // Deriv term.
 	if (td<0) {
 	  sedm = sedm + td;
 	} else {
@@ -274,7 +302,7 @@ namespace mathieu {
 
       // Hack -- this makes sure the fcn has the right overall sign for q<0.
       // Someday combine this with the above sums into the same for loop.
-      double s = 0.0d;
+      double s = 0.0;
       for (int l = 0; l<N; l++) {
 	s = s + BB[l];
       }
@@ -311,7 +339,14 @@ namespace mathieu {
       *mc1d = std::numeric_limits<double>::quiet_NaN();
       return SF_ERROR_DOMAIN;
     }
-    if (q<0) return SF_ERROR_DOMAIN; // q<0 is unimplemented
+
+    if (q<0) {
+      *mc1 = std::numeric_limits<double>::quiet_NaN();
+      *mc1d = std::numeric_limits<double>::quiet_NaN();
+      return SF_ERROR_DOMAIN; // q<0 is unimplemented
+    }
+
+    // Don't need to return for these, just set retcode.
     if (abs(q)>1.0e3d) retcode = SF_ERROR_LOSS;  // q>1000 is inaccurate
     if (m>15 && q>0.1d) retcode = SF_ERROR_LOSS;
 
@@ -353,9 +388,16 @@ namespace mathieu {
 
       // Get coeff vector for even modmc1
       double *AA = (double *) calloc(N, sizeof(double));
-      if (AA == NULL) return SF_ERROR_MEMORY;
+      if (AA == NULL) {
+	*mc1 = std::numeric_limits<double>::quiet_NaN();
+	*mc1d = std::numeric_limits<double>::quiet_NaN();
+	return SF_ERROR_MEMORY;
+      }
+
       retcode = mathieu_coeffs_ee(N, q, m, AA);
       if (retcode != SF_ERROR_OK) {
+	*mc1 = std::numeric_limits<double>::quiet_NaN();
+	*mc1d = std::numeric_limits<double>::quiet_NaN();
 	free(AA);
 	return retcode;
       }
@@ -467,9 +509,16 @@ namespace mathieu {
 
       // Get coeff vector for even modmc1
       double *AA = (double *) calloc(N, sizeof(double));
-      if (AA == NULL) return SF_ERROR_MEMORY;
+      if (AA == NULL) {
+	*mc1 = std::numeric_limits<double>::quiet_NaN();
+	*mc1d = std::numeric_limits<double>::quiet_NaN();
+	return SF_ERROR_MEMORY;
+      }
+      
       retcode = mathieu_coeffs_eo(N, q, m, AA);
       if (retcode != SF_ERROR_OK) {
+	*mc1 = std::numeric_limits<double>::quiet_NaN();
+	*mc1d = std::numeric_limits<double>::quiet_NaN();
 	free(AA);
 	return retcode;
       }
@@ -606,7 +655,14 @@ namespace mathieu {
       *ms1d = std::numeric_limits<double>::quiet_NaN();
       return SF_ERROR_DOMAIN;
     }
-    if (q<0) return SF_ERROR_DOMAIN;  // q < 0 is currently unimplemented
+
+    if (q<0) {
+      *ms1 = std::numeric_limits<double>::quiet_NaN();
+      *ms1d = std::numeric_limits<double>::quiet_NaN();
+      return SF_ERROR_DOMAIN; // q<0 is unimplemented
+    }
+
+    // Don't need to return immediately for these.
     if (abs(q)>1.0e3d) retcode = SF_ERROR_LOSS;
     if (m>15 && q>0.1d) retcode = SF_ERROR_LOSS;
 
@@ -646,9 +702,16 @@ namespace mathieu {
 
       // Get coeff vector for even modms1
       double *BB = (double *) calloc(N, sizeof(double));
-      if (BB == NULL) return SF_ERROR_MEMORY;
+      if (BB == NULL) {
+	*ms1 = std::numeric_limits<double>::quiet_NaN();
+	*ms1d = std::numeric_limits<double>::quiet_NaN();
+	return SF_ERROR_MEMORY;
+      }
+      
       retcode = mathieu_coeffs_oe(N, q, m, BB);
       if (retcode != SF_ERROR_OK) {
+	*ms1 = std::numeric_limits<double>::quiet_NaN();
+	*ms1d = std::numeric_limits<double>::quiet_NaN();
 	free(BB);
 	return retcode;
       }
@@ -766,9 +829,16 @@ namespace mathieu {
 
       // Get coeff vector for even modms1
       double *BB = (double *) calloc(N, sizeof(double));
-      if (BB == NULL) return SF_ERROR_MEMORY;
+      if (BB == NULL) {
+	*ms1 = std::numeric_limits<double>::quiet_NaN();
+	*ms1d = std::numeric_limits<double>::quiet_NaN();
+	return SF_ERROR_MEMORY;
+      }
+      
       retcode = mathieu_coeffs_oo(N, q, m, BB);
       if (retcode != SF_ERROR_OK) {
+	*ms1 = std::numeric_limits<double>::quiet_NaN();
+	*ms1d = std::numeric_limits<double>::quiet_NaN();
 	free(BB);
 	return retcode;
       }
@@ -905,7 +975,14 @@ namespace mathieu {
       *mc2d = std::numeric_limits<double>::quiet_NaN();
       return SF_ERROR_DOMAIN;
     }
-    if (q<0) return SF_ERROR_DOMAIN;  // q<0 is currently unimplemented
+
+    if (q<0) {
+      *mc2 = std::numeric_limits<double>::quiet_NaN();
+      *mc2d = std::numeric_limits<double>::quiet_NaN();
+      return SF_ERROR_DOMAIN; // q<0 is unimplemented
+    }
+
+    // Don't need to return immediate for these.
     if (abs(q)>1.0e3d) retcode = SF_ERROR_LOSS;
     if (m>15 && q>0.1d) retcode = SF_ERROR_LOSS;
 
@@ -945,9 +1022,16 @@ namespace mathieu {
 
       // Get coeff vector for even modmc2
       double *AA = (double *) calloc(N, sizeof(double));
-      if (AA == NULL) return SF_ERROR_MEMORY;
+      if (AA == NULL) {
+	*mc2 = std::numeric_limits<double>::quiet_NaN();
+	*mc2d = std::numeric_limits<double>::quiet_NaN();
+	return SF_ERROR_MEMORY;
+      }
+      
       retcode = mathieu_coeffs_ee(N, q, m, AA);
       if (retcode != SF_ERROR_OK) {
+	*mc2 = std::numeric_limits<double>::quiet_NaN();
+	*mc2d = std::numeric_limits<double>::quiet_NaN();
 	free(AA);
 	return retcode;
       }
@@ -1058,9 +1142,16 @@ namespace mathieu {
 
       // Get coeff vector for odd mc2
       double *AA = (double *) calloc(N, sizeof(double));
-      if (AA == NULL) return SF_ERROR_MEMORY;
+      if (AA == NULL) {
+	*mc2 = std::numeric_limits<double>::quiet_NaN();
+	*mc2d = std::numeric_limits<double>::quiet_NaN();
+	return SF_ERROR_MEMORY;
+      }
+      
       retcode = mathieu_coeffs_eo(N, q, m, AA);
       if (retcode != SF_ERROR_OK) {
+	*mc2 = std::numeric_limits<double>::quiet_NaN();
+	*mc2d = std::numeric_limits<double>::quiet_NaN();
 	free(AA);
 	return retcode;
       }
@@ -1197,7 +1288,14 @@ namespace mathieu {
       *ms2d = std::numeric_limits<double>::quiet_NaN();
       return SF_ERROR_DOMAIN;
     }
-    if (q<0) return SF_ERROR_DOMAIN;  // q<0 is currently unimplemented
+
+    if (q<0) {
+      *ms2 = std::numeric_limits<double>::quiet_NaN();
+      *ms2d = std::numeric_limits<double>::quiet_NaN();
+      return SF_ERROR_DOMAIN; // q<0 is unimplemented
+    }
+
+    // Don't need to return immediately from these.
     if (abs(q)>1.0e3d) retcode = SF_ERROR_LOSS;
     if (m>15 && q>0.1d) retcode = SF_ERROR_LOSS;
 
@@ -1238,9 +1336,16 @@ namespace mathieu {
 
       // Get coeff vector for even modms2
       double *BB = (double *) calloc(N, sizeof(double));
-      if (BB == NULL) return SF_ERROR_MEMORY;
+      if (BB == NULL) {
+	*ms2 = std::numeric_limits<double>::quiet_NaN();
+	*ms2d = std::numeric_limits<double>::quiet_NaN();
+	return SF_ERROR_MEMORY;
+      }
+
       retcode = mathieu_coeffs_oe(N, q, m, BB);
       if (retcode != SF_ERROR_OK) {
+	*ms2 = std::numeric_limits<double>::quiet_NaN();
+	*ms2d = std::numeric_limits<double>::quiet_NaN();
 	free(BB);
 	return retcode;
       }
@@ -1358,9 +1463,16 @@ namespace mathieu {
 
       // Get coeff vector for even modms2
       double *BB = (double *) calloc(N, sizeof(double));
-      if (BB == NULL) return SF_ERROR_MEMORY;
+      if (BB == NULL) {
+	*ms2 = std::numeric_limits<double>::quiet_NaN();
+	*ms2d = std::numeric_limits<double>::quiet_NaN();
+	return SF_ERROR_MEMORY;
+      }
+      
       retcode = mathieu_coeffs_oo(N, q, m, BB);
       if (retcode != SF_ERROR_OK) {
+	*ms2 = std::numeric_limits<double>::quiet_NaN();
+	*ms2d = std::numeric_limits<double>::quiet_NaN();
 	free(BB);
 	return retcode;
       }
