@@ -6,7 +6,7 @@
 #include "matrix_utils.h"
 
 // These fcns are meant to make it easier to deal with
-// matrices in C.  We use col major format since that's
+// matrices in C/C++.  We use col major format since that's
 // what underlies Lapack.
 
 // returns +/-1 depending upon sign of x

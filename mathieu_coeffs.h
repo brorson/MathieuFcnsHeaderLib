@@ -1,6 +1,7 @@
 #ifndef MATHIEU_COEFFS_H
 #define MATHIEU_COEFFS_H
 
+#include <vector>
 #include "../config.h"
 #include "../error.h"
 #include "make_matrix.h"
@@ -44,44 +45,36 @@ namespace mathieu {
     // m = order of Mathieu fcn desired.
     // Output:
     // AA = length N vector preallocated to hold coeffs.
-    // Returns 0 if all goes well.  Must put check on calloc
-    // here.
+    // Returns SF_ERROR_OK if all goes well.
 
-    int retcode = 0;
+    int retcode = SF_ERROR_OK;
 
     // Bail out if m is not even.
-    if (m % 2 != 0) return -1;
+    if (m % 2 != 0) return SF_ERROR_ARG;
 
     // Allocate recursion matrix
-    double *A = (double *) calloc(N*N, sizeof(double));
-    if (A == NULL) return SF_ERROR_MEMORY;
+    std::vector<double> A(N*N);
 
     // Do EVD
-    retcode = make_matrix_ee(N,q,A);
+    retcode = make_matrix_ee(N,q,A.data());
     if (retcode != 0) {
-      free(A);
       return SF_ERROR_NO_RESULT;
     }
 
-    {
-      // Work in local scope.
-      char V[1] = {'V'};
-      char U[1] = {'U'};      
-      double wkopt;
-      double* work;
-      /* Query and allocate the optimal workspace */
-      // I do this work in an inner scope to make it easy
-      // to clean up afterwards.
-      int lwork = -1;
-      dsyev_( V, U, &N, A, &N, AA, &wkopt, &lwork, &retcode );
-      lwork = (int)wkopt;
-      work = (double*)malloc( lwork*sizeof(double) );
-      /* Solve eigenproblem */
-      dsyev_( V, U, &N, A, &N, AA, work, &lwork, &retcode );
-      free(work);
-    }
+    char V[1] = {'V'};
+    char U[1] = {'U'};      
+    double wkopt;
+    /* Query and allocate the optimal workspace */
+    int lwork = -1;
+    dsyev_( V, U, &N, A.data(), &N, AA, &wkopt, &lwork, &retcode );
+    lwork = (int)wkopt;
+    std::vector<double> work(lwork);
+
+    /* Solve eigenproblem */
+    dsyev_( V, U, &N, A.data(), &N, AA, work.data(), &lwork, &retcode );
+    
+    // Check return code from dsyev and bail if it's not 0.
     if (retcode != 0) {
-	free(A);
 	return SF_ERROR_NO_RESULT;
     }
     
@@ -99,7 +92,6 @@ namespace mathieu {
       idx = MATRIX_IDX(N, row, j);
       AA[j] = A[idx];
     }
-    free(A);
     return retcode;
   }
 
@@ -109,40 +101,35 @@ namespace mathieu {
     // Returns Fourier coeffs for the mth order ce_2n+1 Mathieu fcn.
     // Allowed value of m = 1, 3, 5, 7 ... 
 
-    int retcode = 0;
+    int retcode = SF_ERROR_OK;
 
     // Bail out if m is not odd.
-    if (m % 2 != 1) return -1;
+    if (m % 2 != 1) return SF_ERROR_ARG;
 
     // Allocate recursion matrix
-    double *A = (double *) calloc(N*N, sizeof(double));
-    if (A == NULL) return SF_ERROR_MEMORY;
+    std::vector<double> A(N*N);
     
     // Do EVD
-    retcode = make_matrix_eo(N,q,A);
+    retcode = make_matrix_eo(N,q,A.data());
     if (retcode != 0) {
-      free(A);
       return SF_ERROR_NO_RESULT;
     }
-    {
-      // Work in local scope.
-      char V[1] = {'V'};
-      char U[1] = {'U'};      
-      double wkopt;
-      double* work;
-      /* Query and allocate the optimal workspace */
-      // I do this work in an inner scope to make it easy
-      // to clean up afterwards.
-      int lwork = -1;
-      dsyev_( V, U, &N, A, &N, AA, &wkopt, &lwork, &retcode );
-      lwork = (int)wkopt;
-      work = (double*)malloc( lwork*sizeof(double) );
-      /* Solve eigenproblem */
-      dsyev_( V, U, &N, A, &N, AA, work, &lwork, &retcode );
-      free(work);
-    }
+
+    char V[1] = {'V'};
+    char U[1] = {'U'};      
+    double wkopt;
+    
+    /* Query and allocate the optimal workspace */
+    int lwork = -1;
+    dsyev_( V, U, &N, A.data(), &N, AA, &wkopt, &lwork, &retcode );
+    lwork = (int)wkopt;
+    std::vector<double> work(lwork);
+
+    /* Solve eigenproblem */
+    dsyev_( V, U, &N, A.data(), &N, AA, work.data(), &lwork, &retcode );
+    
+    // Check return code from dsyev and bail if it's not 0.
     if (retcode != 0) {
-      free(A);
       return SF_ERROR_NO_RESULT;
     }
     
@@ -158,7 +145,6 @@ namespace mathieu {
       idx = MATRIX_IDX(N, row, j);
       AA[j] = A[idx];
     }
-    free(A);
     return retcode;
   }
 
@@ -176,40 +162,36 @@ namespace mathieu {
     // Returns 0 if all goes well.  Must put check on calloc
     // here.
 
-    int retcode = 0;
+    int retcode = SF_ERROR_OK;
 
     // Bail out if m is not even or >= 2.
-    if ((m % 2 != 0) || (m < 2)) return -1;
+    if ((m % 2 != 0) || (m < 2)) return SF_ERROR_ARG;
 
     // Allocate recursion matrix
-    double *A = (double *) calloc(N*N, sizeof(double));
-    if (A == NULL) return SF_ERROR_MEMORY;
+    std::vector<double> A(N*N);
 
     // Do EVD
-    retcode = make_matrix_oe(N,q,A);
+    retcode = make_matrix_oe(N,q,A.data());
     if (retcode != 0) {
-      free(A);
       return SF_ERROR_NO_RESULT;
     }
-    {
-      // Work in local scope.
-      char V[1] = {'V'};
-      char U[1] = {'U'};      
-      double wkopt;
-      double* work;
-      /* Query and allocate the optimal workspace */
-      // I do this work in an inner scope to make it easy
-      // to clean up afterwards.
-      int lwork = -1;
-      dsyev_( V, U, &N, A, &N, AA, &wkopt, &lwork, &retcode );
-      lwork = (int)wkopt;
-      work = (double*)malloc( lwork*sizeof(double) );
-      /* Solve eigenproblem */
-      dsyev_( V, U, &N, A, &N, AA, work, &lwork, &retcode );
-      free(work);
-    }
+
+    // Work in local scope.
+    char V[1] = {'V'};
+    char U[1] = {'U'};      
+    double wkopt;
+    
+    /* Query and allocate the optimal workspace */
+    int lwork = -1;
+    dsyev_( V, U, &N, A.data(), &N, AA, &wkopt, &lwork, &retcode );
+    lwork = (int)wkopt;
+    std::vector<double> work(lwork);
+
+    /* Solve eigenproblem */
+    dsyev_( V, U, &N, A.data(), &N, AA, work.data(), &lwork, &retcode );
+    
+    // Bail out if dsyev doesn't return 0.
     if (retcode != 0) {
-      free(A);
       return SF_ERROR_NO_RESULT;
     }
     
@@ -224,7 +206,6 @@ namespace mathieu {
       idx = MATRIX_IDX(N, row, j);
       AA[j] = A[idx];
     }
-    free(A);
     return retcode;
   }
 
@@ -234,40 +215,35 @@ namespace mathieu {
     // Returns Fourier coeffs for the mth order se_2n+1 Mathieu fcn.
     // Allowed value of m = 1, 3, 5, 7 ... 
 
-    int retcode = 0;
+    int retcode = SF_ERROR_OK;
 
     // Bail out if m is not odd.
-    if (m % 2 != 1) return -1;
+    if (m % 2 != 1) return SF_ERROR_ARG;
 
     // Allocate recursion matrix
-    double *A = (double *) calloc(N*N, sizeof(double));
-    if (A == NULL) return SF_ERROR_MEMORY;
+    std::vector<double> A(N*N);
     
     // Do EVD
-    retcode = make_matrix_oo(N,q,A);
+    retcode = make_matrix_oo(N,q,A.data());
     if (retcode != 0) {
-      free(A);
       return SF_ERROR_NO_RESULT;
     }
-    {
-      // Work in local scope
-      char V[1] = {'V'};
-      char U[1] = {'U'};      
-      double wkopt;
-      double* work;
-      /* Query and allocate the optimal workspace */
-      // I do this work in an inner scope to make it easy
-      // to clean up afterwards.
-      int lwork = -1;
-      dsyev_( V, U, &N, A, &N, AA, &wkopt, &lwork, &retcode );
-      lwork = (int)wkopt;
-      work = (double*)malloc( lwork*sizeof(double) );
-      /* Solve eigenproblem */
-      dsyev_( V, U, &N, A, &N, AA, work, &lwork, &retcode );
-      free(work);
-    }
+
+    // Work in local scope
+    char V[1] = {'V'};
+    char U[1] = {'U'};      
+    double wkopt;
+
+    /* Query and allocate the optimal workspace */
+    int lwork = -1;
+    dsyev_( V, U, &N, A.data(), &N, AA, &wkopt, &lwork, &retcode );
+    lwork = (int)wkopt;
+    std::vector<double> work(lwork);
+    /* Solve eigenproblem */
+    dsyev_( V, U, &N, A.data(), &N, AA, work.data(), &lwork, &retcode );
+
+    // Bail out if dsyev didn't return 0;
     if (retcode != 0) {
-      free(A);
       return SF_ERROR_NO_RESULT;
     }
     
@@ -283,7 +259,6 @@ namespace mathieu {
       idx = MATRIX_IDX(N, row, j);
       AA[j] = A[idx];
     }
-    free(A);
     return retcode;
   }
 

@@ -23,13 +23,16 @@ namespace mathieu {
   /*-----------------------------------------------
   This creates the recurrence relation matrix for
   the even-even Mathieu fcns (ce_2n).
+
   Inputs:
   N = matrix size (related to max order desired).
   q = shape parameter.
+
   Output:
   A = recurrence matrix (must be calloc'ed in caller).
+
   Return:
-  return code = 0 if OK.
+  return code = SF_ERROR_OK if OK.
   -------------------------------------------------*/
   int make_matrix_ee(int N, double q, double *A) {
     int j;
@@ -59,19 +62,22 @@ namespace mathieu {
     i = MATRIX_IDX(N, N-1, N-1);    
     A[i]   = (2.0*(N-1))*(2.0*(N-1));
 
-    return 0;
+    return SF_ERROR_OK;
   }
   
   /*-----------------------------------------------
-  This creates the recurrence relation matrix for
-  the even-odd Mathieu fcns (ce_2n+1).
+  This creates the recurrence relation matrix for the
+  even-odd Mathieu fcns (ce_2n+1).
+  
   Inputs:
   N = matrix size (related to max order desired).
   q = shape parameter.
+
   Output:
   A = recurrence matrix (calloc in caller).
+
   Return:
-  return code = 0 if OK.
+  return code = SF_ERROR_OK if OK.
   -------------------------------------------------*/
   int make_matrix_eo(int N, double q, double *A) {
     int j;
@@ -102,20 +108,23 @@ namespace mathieu {
     i = MATRIX_IDX(N, N-1, N-1);    
     A[i] = (2.0*(N-1)+1.0)*(2.0*(N-1)+1.0);
 
-    return 0;
+    return SF_ERROR_OK;
   }
 
   /*-----------------------------------------------
   This creates the recurrence relation matrix for
   the odd-even Mathieu fcns (se_2n) -- sometimes called
   se_2n+2.
+
   Inputs:
   N = matrix size (related to max order desired).
   q = shape parameter.
+
   Output:
   A = recurrence matrix (calloc in caller).
+
   Return:
-  return code = 0 if OK.
+  return code = SF_ERROR_OK if OK.
   -------------------------------------------------*/
   int make_matrix_oe(int N, double q, double *A) {
     int j;
@@ -146,20 +155,23 @@ namespace mathieu {
     i = MATRIX_IDX(N, N-1, N-1);    
     A[i] = (2.0*N)*(2.0*N);
 
-    return 0;
+    return SF_ERROR_OK;
   }
 
     
   /*-----------------------------------------------
   This creates the recurrence relation matrix for
   the odd-odd Mathieu fcns (se_2n+1).
+
   Inputs:
   N = matrix size (related to max order desired).
   q = shape parameter.
+
   Output:
   A = recurrence matrix (calloc in caller).
+
   Return:
-  return code = 0 if OK.
+  return code = SF_ERROR_OK if OK.
   -------------------------------------------------*/
   int make_matrix_oo(int N, double q, double *A) {
     int j;
@@ -190,7 +202,7 @@ namespace mathieu {
     i = MATRIX_IDX(N, N-1, N-1);    
     A[i] = (2.0*N-1.0)*(2.0*N-1.0);
 
-    return 0;
+    return SF_ERROR_OK;
   }
 
 

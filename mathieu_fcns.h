@@ -1,6 +1,7 @@
 #ifndef MATHIEU_FCNS_H
 #define MATHIEU_FCNS_H
 
+#include <vector>
 #include "../config.h"
 #include "../error.h"
 #include <math.h>
@@ -14,7 +15,7 @@
  * This is part of the Mathieu function suite -- a reimplementation
  * of the Mathieu functions for Scipy.  This file holds the function
  * implementations themselves.  The prototype was written in Matlab
- * and validated.  This is a translation from Matlab to C.
+ * and validated.  This is a translation from Matlab to C++.
  *
  * Stuart Brorson, Summer 2025.
  * 
@@ -23,6 +24,11 @@
 namespace xsf {
 namespace mathieu {
 
+  // Forward declarations
+  int check_angular_fcn_domain(int m, double q);
+  int check_modified_fcn_domain(int m, double q);  
+  int set_adaptive_offset_c(int m, double q);
+  
   //==================================================================
   int mathieu_ce(int m, double q, double v, double *ce, double *ced) {
     // This computes the Mathieu fcn ce
@@ -38,16 +44,14 @@ namespace mathieu {
 
     int retcode = SF_ERROR_OK;
 
-    // Check input domain and flag any problems.
-    if (m>500) {
-      // Don't support absurdly larger orders for now.
-      *ce = std::numeric_limits<double>::quiet_NaN();
-      *ced = std::numeric_limits<double>::quiet_NaN();
-      return SF_ERROR_DOMAIN;
+    // Check inputs.  Note that retcode can include SF_ERROR_LOSS
+    // but the program can keep going in that case.
+    retcode = check_angular_fcn_domain(m,q);
+    if (retcode == SF_ERROR_DOMAIN) {
+	*ce = std::numeric_limits<double>::quiet_NaN();
+	*ced = std::numeric_limits<double>::quiet_NaN();
+	return retcode;
     }
-    // abs(q) > 1000 leads to low accuracy.
-    if (abs(q)>1.0e3d) retcode = SF_ERROR_LOSS;
-      
     
     // I find the peak Fourier coeff tracks m.  Therefore,
     // adjust the matrix size based on order m.  Later make this
@@ -57,21 +61,14 @@ namespace mathieu {
 
     // Use different coeffs depending upon whether m is even or odd.
     if (m % 2 == 0) {
-      // Even
+      // Even order
 
       // Get coeff vector for even ce
-      double *AA = (double *) calloc(N, sizeof(double));
-      if (AA == NULL) {
-	*ce = std::numeric_limits<double>::quiet_NaN();
-	*ced = std::numeric_limits<double>::quiet_NaN();
-	return  SF_ERROR_MEMORY;
-      }
-      
-      retcode = mathieu_coeffs_ee(N,q,m, AA);
+      std::vector<double> AA(N);
+      retcode = mathieu_coeffs_ee(N,q,m, AA.data());
       if (retcode != SF_ERROR_OK) {
 	*ce = std::numeric_limits<double>::quiet_NaN();
 	*ced = std::numeric_limits<double>::quiet_NaN();
-	free(AA);
 	return retcode;
       }
       
@@ -100,7 +97,7 @@ namespace mathieu {
       *ce = cep+cem;
       *ced = cedp+cedm;
 
-      // Hack -- this makes sure the fcn has the right overall sign for q<0.
+      // This makes sure the fcn has the right overall sign for q<0.
       // Someday combine this with the above sums into the same for loop.
       double s = 0.0;
       for (int l = 0; l<N; l++) {
@@ -108,24 +105,17 @@ namespace mathieu {
       }
       *ce = SIGN(s)*(*ce);
       *ced = SIGN(s)*(*ced);
-      free(AA);
       
     } else {
-      // Odd
+      // Odd order
 
       // Get coeff vector for odd ce
-      double *AA = (double *) calloc(N, sizeof(double));
-      if (AA == NULL) {
-	*ce = std::numeric_limits<double>::quiet_NaN();
-	*ced = std::numeric_limits<double>::quiet_NaN();
-	return  SF_ERROR_MEMORY;
-      }
+      std::vector<double> AA(N);
 
-      retcode = mathieu_coeffs_eo(N,q,m, AA);
+      retcode = mathieu_coeffs_eo(N,q,m, AA.data());
       if (retcode != SF_ERROR_OK) {
 	*ce = std::numeric_limits<double>::quiet_NaN();
 	*ced = std::numeric_limits<double>::quiet_NaN();
-	free(AA);
 	return retcode;
       }
       
@@ -154,7 +144,7 @@ namespace mathieu {
       *ce = cep+cem;
       *ced = cedp+cedm;
 
-      // Hack -- this makes sure the fcn has the right overall sign for q<0.
+      // This makes sure the fcn has the right overall sign for q<0.
       // Someday combine this with the above sums into the same for loop.
       double s = 0.0;
       for (int l = 0; l<N; l++) {
@@ -163,7 +153,6 @@ namespace mathieu {
       *ce = SIGN(s)*(*ce);
       *ced = SIGN(s)*(*ced);
 
-      free(AA);
     } // if (m % 2 == 0)
 
     return retcode;
@@ -185,15 +174,15 @@ namespace mathieu {
 
     int retcode = SF_ERROR_OK;
 
-    // Check input domain and flag any problems.
-    if (m>500) {
-      // Don't support absurdly larger orders for now.
-      *se = std::numeric_limits<double>::quiet_NaN();
-      *sed = std::numeric_limits<double>::quiet_NaN();
-      return SF_ERROR_DOMAIN;
+    // Check inputs.  If domain err (inputs out of bounds) then return.
+    // Note that retcode can include SF_ERROR_LOSS
+    // but the program can keep going in that case.
+    retcode = check_angular_fcn_domain(m,q);
+    if (retcode == SF_ERROR_DOMAIN) {
+	*se = std::numeric_limits<double>::quiet_NaN();
+	*sed = std::numeric_limits<double>::quiet_NaN();
+	return retcode;
     }
-    // q>1000 leads to inaccuracy.
-    if (abs(q)>1.0e3d) retcode = SF_ERROR_LOSS;
     
     // I find the peak Fourier coeff tracks m.  Therefore,
     // adjust the matrix size based on order m.  Later make this
@@ -203,21 +192,15 @@ namespace mathieu {
 
     // Use different coeffs depending upon whether m is even or odd.
     if (m % 2 == 0) {
-      // Even
+      // Even order.
 
       // Get coeff vector for even se
-      double *BB = (double *) calloc(N, sizeof(double));
-      if (BB == NULL) {
-	*se = std::numeric_limits<double>::quiet_NaN();
-	*sed = std::numeric_limits<double>::quiet_NaN();
-	return  SF_ERROR_MEMORY;
-      }
+      std::vector<double> BB(N);
 
-      retcode = mathieu_coeffs_oe(N,q,m, BB);
+      retcode = mathieu_coeffs_oe(N,q,m, BB.data());
       if (retcode != SF_ERROR_OK) {
 	*se = std::numeric_limits<double>::quiet_NaN();
 	*sed = std::numeric_limits<double>::quiet_NaN();
-	free(BB);
 	return retcode;
       }
       
@@ -246,7 +229,7 @@ namespace mathieu {
       *se = sep+sem;
       *sed = sedp+sedm;
 
-      // Hack -- this makes sure the fcn has the right overall sign for q<0.
+      // This makes sure the fcn has the right overall sign for q<0.
       // Someday combine this with the above sums into the same for loop.
       double s = 0.0;
       for (int l = 0; l<N; l++) {
@@ -255,23 +238,16 @@ namespace mathieu {
       *se = SIGN(s)*(*se);
       *sed = SIGN(s)*(*sed);
       
-      free(BB);
     } else {
-      // Odd
+      // Odd order
 
       // Get coeff vector for odd se
-      double *BB = (double *) calloc(N, sizeof(double));
-      if (BB == NULL) {
-	*se = std::numeric_limits<double>::quiet_NaN();
-	*sed = std::numeric_limits<double>::quiet_NaN();
-	return SF_ERROR_MEMORY;
-      }
+      std::vector<double> BB(N);
 
-      retcode = mathieu_coeffs_oo(N,q,m, BB);
+      retcode = mathieu_coeffs_oo(N,q,m, BB.data());
       if (retcode != SF_ERROR_OK) {
 	*se = std::numeric_limits<double>::quiet_NaN();
 	*sed = std::numeric_limits<double>::quiet_NaN();
-	free(BB);
 	return retcode;
       }
       
@@ -300,7 +276,7 @@ namespace mathieu {
       *se = sep+sem;
       *sed = sedp+sedm;
 
-      // Hack -- this makes sure the fcn has the right overall sign for q<0.
+      // This makes sure the fcn has the right overall sign for q<0.
       // Someday combine this with the above sums into the same for loop.
       double s = 0.0;
       for (int l = 0; l<N; l++) {
@@ -309,7 +285,6 @@ namespace mathieu {
       *se = SIGN(s)*(*se);
       *sed = SIGN(s)*(*sed);
 
-      free(BB);
     }
 
     return retcode;
@@ -332,23 +307,14 @@ namespace mathieu {
     int retcode = SF_ERROR_OK;
     int c;        // Offset used in adaptive computation.
 
-    // Check input domain and flag any problems
-    if (m>500) {
-      // Don't support absurdly larger orders for now.
+    // Check inputs.  Note that retcode can include SF_ERROR_LOSS
+    // but the program can keep going in that case.
+    retcode = check_modified_fcn_domain(m,q);
+    if (retcode == SF_ERROR_DOMAIN) {
       *mc1 = std::numeric_limits<double>::quiet_NaN();
       *mc1d = std::numeric_limits<double>::quiet_NaN();
-      return SF_ERROR_DOMAIN;
+      return retcode;
     }
-
-    if (q<0) {
-      *mc1 = std::numeric_limits<double>::quiet_NaN();
-      *mc1d = std::numeric_limits<double>::quiet_NaN();
-      return SF_ERROR_DOMAIN; // q<0 is unimplemented
-    }
-
-    // Don't need to return for these, just set retcode.
-    if (abs(q)>1.0e3d) retcode = SF_ERROR_LOSS;  // q>1000 is inaccurate
-    if (m>15 && q>0.1d) retcode = SF_ERROR_LOSS;
 
     // I find the peak Fourier coeff tracks m.  Therefore,
     // adjust the matrix size based on order m.  Later make this
@@ -362,43 +328,20 @@ namespace mathieu {
     double expmu = exp(-u);
     double s = sqq*expmu;
     double t = sqq*exppu;
-      
-    // This is used for the adaptive computation.
-    // I set the offset used in Bessel sum depending upon order m.
-    // The offset depends upon exactly where in the [q,m] plane lives
-    // the input args.
-    // The idea comes from the book "Accurate Computation of Mathieu Functions",
-    // Malcolm M. Bibby & Andrew F. Peterson.  Also used in the paper
-    // "Accurate calculation of the modified Mathieu functions of
-    // integer order", Van Buren & Boisvert.
-    if ( (m>5 && q<.001) || 
-	 (m>7 && q<.01) || 
-	 (m>10 && q<.1) || 
-	 (m>15 && q<1)  || 
-	 (m>20 && q<10) || 
-	 (m>30 && q<100) ) {
-      c = m/2;
-	} else {
-      c = 0;
-    }
+
+    // Set offset c for adaptive calc.
+    c = set_adaptive_offset_c(m, q);
     
     // Use different coeffs depending upon whether m is even or odd.
     if (m % 2 == 0) {
-      // Even
+      // Even order
 
       // Get coeff vector for even modmc1
-      double *AA = (double *) calloc(N, sizeof(double));
-      if (AA == NULL) {
-	*mc1 = std::numeric_limits<double>::quiet_NaN();
-	*mc1d = std::numeric_limits<double>::quiet_NaN();
-	return SF_ERROR_MEMORY;
-      }
-
-      retcode = mathieu_coeffs_ee(N, q, m, AA);
+      std::vector<double> AA(N);
+      retcode = mathieu_coeffs_ee(N, q, m, AA.data());
       if (retcode != SF_ERROR_OK) {
 	*mc1 = std::numeric_limits<double>::quiet_NaN();
 	*mc1d = std::numeric_limits<double>::quiet_NaN();
-	free(AA);
 	return retcode;
       }
       
@@ -502,24 +445,15 @@ namespace mathieu {
 	*mc1d = -sqq*(*mc1d)/AA[c];
       }
 
-      free(AA);
-      
     } else {
-      // Odd -- m = 1, 3, 5, 7 ...
+      // Odd order -- m = 1, 3, 5, 7 ...
 
-      // Get coeff vector for even modmc1
-      double *AA = (double *) calloc(N, sizeof(double));
-      if (AA == NULL) {
-	*mc1 = std::numeric_limits<double>::quiet_NaN();
-	*mc1d = std::numeric_limits<double>::quiet_NaN();
-	return SF_ERROR_MEMORY;
-      }
-      
-      retcode = mathieu_coeffs_eo(N, q, m, AA);
+      // Get coeff vector for odd modmc1
+      std::vector<double> AA(N);
+      retcode = mathieu_coeffs_eo(N, q, m, AA.data());
       if (retcode != SF_ERROR_OK) {
 	*mc1 = std::numeric_limits<double>::quiet_NaN();
 	*mc1d = std::numeric_limits<double>::quiet_NaN();
-	free(AA);
 	return retcode;
       }
       
@@ -625,7 +559,6 @@ namespace mathieu {
 	*mc1d = -sqq*(*mc1d)/AA[c];
       }
 
-      free(AA);
     }
 
     return retcode;
@@ -648,23 +581,14 @@ namespace mathieu {
     int retcode = SF_ERROR_OK;
     int c;        // Offset used in adaptive computation.
     
-    // Check input domain and flag any problems
-    if (m>500) {
-      // Don't support absurdly larger orders for now.
+    // Check inputs.  Note that retcode can include SF_ERROR_LOSS
+    // but the program can keep going in that case.
+    retcode = check_modified_fcn_domain(m,q);
+    if (retcode == SF_ERROR_DOMAIN) {
       *ms1 = std::numeric_limits<double>::quiet_NaN();
       *ms1d = std::numeric_limits<double>::quiet_NaN();
-      return SF_ERROR_DOMAIN;
+      return retcode;
     }
-
-    if (q<0) {
-      *ms1 = std::numeric_limits<double>::quiet_NaN();
-      *ms1d = std::numeric_limits<double>::quiet_NaN();
-      return SF_ERROR_DOMAIN; // q<0 is unimplemented
-    }
-
-    // Don't need to return immediately for these.
-    if (abs(q)>1.0e3d) retcode = SF_ERROR_LOSS;
-    if (m>15 && q>0.1d) retcode = SF_ERROR_LOSS;
 
     // I find the peak Fourier coeff tracks m.  Therefore,
     // adjust the matrix size based on order m.  Later make this
@@ -679,40 +603,19 @@ namespace mathieu {
     double s = sqq*expmu;
     double t = sqq*exppu;
       
-    // This is used for the adaptive computation.
-    // I set the offset used in Bessel fcn depending upon order m.
-    // The idea comes from the book "Accurate Computation of Mathieu Functions",
-    // Malcolm M. Bibby & Andrew F. Peterson.  Also used in the paper
-    // "Accurate calculation of the modified Mathieu functions of
-    // integer order", Van Buren & Boisvert.
-    if ( (m>5 && q<.001) || 
-	 (m>7 && q<.01) || 
-	 (m>10 && q<.1) || 
-	 (m>15 && q<1)  || 
-	 (m>20 && q<10) || 
-	 (m>30 && q<100) ) {
-      c = m/2;
-	} else {
-      c = 0;
-    }
-    
+    // Set offset c for adaptive calc.
+    c = set_adaptive_offset_c(m, q);
+
     // Use different coeffs depending upon whether m is even or odd.
     if (m % 2 == 0) {
-      // Even
+      // Even order
 
       // Get coeff vector for even modms1
-      double *BB = (double *) calloc(N, sizeof(double));
-      if (BB == NULL) {
-	*ms1 = std::numeric_limits<double>::quiet_NaN();
-	*ms1d = std::numeric_limits<double>::quiet_NaN();
-	return SF_ERROR_MEMORY;
-      }
-      
-      retcode = mathieu_coeffs_oe(N, q, m, BB);
+      std::vector<double> BB(N);
+      retcode = mathieu_coeffs_oe(N, q, m, BB.data());
       if (retcode != SF_ERROR_OK) {
 	*ms1 = std::numeric_limits<double>::quiet_NaN();
 	*ms1d = std::numeric_limits<double>::quiet_NaN();
-	free(BB);
 	return retcode;
       }
       
@@ -822,24 +725,15 @@ namespace mathieu {
 	*ms1d = -sqq*(*ms1d)/BB[c];
       }
 
-      free(BB);
-
     } else {
-      // Odd -- m = 1, 3, 5, 7 ...
+      // Odd order -- m = 1, 3, 5, 7 ...
 
-      // Get coeff vector for even modms1
-      double *BB = (double *) calloc(N, sizeof(double));
-      if (BB == NULL) {
-	*ms1 = std::numeric_limits<double>::quiet_NaN();
-	*ms1d = std::numeric_limits<double>::quiet_NaN();
-	return SF_ERROR_MEMORY;
-      }
-      
-      retcode = mathieu_coeffs_oo(N, q, m, BB);
+      // Get coeff vector for odd modms1
+      std::vector<double> BB(N);
+      retcode = mathieu_coeffs_oo(N, q, m, BB.data());
       if (retcode != SF_ERROR_OK) {
 	*ms1 = std::numeric_limits<double>::quiet_NaN();
 	*ms1d = std::numeric_limits<double>::quiet_NaN();
-	free(BB);
 	return retcode;
       }
       
@@ -945,7 +839,6 @@ namespace mathieu {
 	*ms1d = -sqq*(*ms1d)/BB[c];
       }
       
-      free(BB);
     }
 
     return retcode;
@@ -968,23 +861,14 @@ namespace mathieu {
     int retcode = SF_ERROR_OK;
     int c;        // Offset used in adaptive computation.
     
-    // Check input domain and flag any problems
-    if (m>500) {
-      // Don't support absurdly larger orders for now.
+    // Check inputs.  Note that retcode can include SF_ERROR_LOSS
+    // but the program can keep going in that case.
+    retcode = check_modified_fcn_domain(m,q);
+    if (retcode == SF_ERROR_DOMAIN) {
       *mc2 = std::numeric_limits<double>::quiet_NaN();
       *mc2d = std::numeric_limits<double>::quiet_NaN();
-      return SF_ERROR_DOMAIN;
+      return retcode;
     }
-
-    if (q<0) {
-      *mc2 = std::numeric_limits<double>::quiet_NaN();
-      *mc2d = std::numeric_limits<double>::quiet_NaN();
-      return SF_ERROR_DOMAIN; // q<0 is unimplemented
-    }
-
-    // Don't need to return immediate for these.
-    if (abs(q)>1.0e3d) retcode = SF_ERROR_LOSS;
-    if (m>15 && q>0.1d) retcode = SF_ERROR_LOSS;
 
     // I find the peak Fourier coeff tracks m.  Therefore,
     // adjust the matrix size based on order m.  Later make this
@@ -999,40 +883,19 @@ namespace mathieu {
     double s = sqq*expmu;
     double t = sqq*exppu;
       
-    // This is used for the adaptive computation.
-    // I set the offset used in Bessel fcn depending upon order m.
-    // The idea comes from the book "Accurate Computation of Mathieu Functions",
-    // Malcolm M. Bibby & Andrew F. Peterson.  Also used in the paper
-    // "Accurate calculation of the modified Mathieu functions of
-    // integer order", Van Buren & Boisvert.
-    if ( (m>5 && q<.001) || 
-	 (m>7 && q<.01) || 
-	 (m>10 && q<.1) || 
-	 (m>15 && q<1)  || 
-	 (m>20 && q<10) || 
-	 (m>30 && q<100) ) {
-      c = m/2;
-	} else {
-      c = 0;
-    }
-    
+    // Set offset c for adaptive calc.
+    c = set_adaptive_offset_c(m, q);
+
     // Use different coeffs depending upon whether m is even or odd.
     if (m % 2 == 0) {
-      // Even
+      // Even order
 
       // Get coeff vector for even modmc2
-      double *AA = (double *) calloc(N, sizeof(double));
-      if (AA == NULL) {
-	*mc2 = std::numeric_limits<double>::quiet_NaN();
-	*mc2d = std::numeric_limits<double>::quiet_NaN();
-	return SF_ERROR_MEMORY;
-      }
-      
-      retcode = mathieu_coeffs_ee(N, q, m, AA);
+      std::vector<double> AA(N);
+      retcode = mathieu_coeffs_ee(N, q, m, AA.data());
       if (retcode != SF_ERROR_OK) {
 	*mc2 = std::numeric_limits<double>::quiet_NaN();
 	*mc2d = std::numeric_limits<double>::quiet_NaN();
-	free(AA);
 	return retcode;
       }
       
@@ -1135,24 +998,15 @@ namespace mathieu {
 	*mc2d = -sqq*(*mc2d)/AA[c];
       }
 
-      free(AA);
-      
     } else {
-      // Odd -- m = 1, 3, 5, 7 ...
+      // Odd order -- m = 1, 3, 5, 7 ...
 
       // Get coeff vector for odd mc2
-      double *AA = (double *) calloc(N, sizeof(double));
-      if (AA == NULL) {
-	*mc2 = std::numeric_limits<double>::quiet_NaN();
-	*mc2d = std::numeric_limits<double>::quiet_NaN();
-	return SF_ERROR_MEMORY;
-      }
-      
-      retcode = mathieu_coeffs_eo(N, q, m, AA);
+      std::vector<double> AA(N);
+      retcode = mathieu_coeffs_eo(N, q, m, AA.data());
       if (retcode != SF_ERROR_OK) {
 	*mc2 = std::numeric_limits<double>::quiet_NaN();
 	*mc2d = std::numeric_limits<double>::quiet_NaN();
-	free(AA);
 	return retcode;
       }
       
@@ -1258,7 +1112,6 @@ namespace mathieu {
 	*mc2d = -sqq*(*mc2d)/AA[c];
       }
 
-      free(AA);
     }
 
     return retcode;
@@ -1281,23 +1134,14 @@ namespace mathieu {
     int retcode = SF_ERROR_OK;
     int c;        // Offset used in adaptive computation.
     
-    // Check input domain and flag any problems
-    if (m>500) {
-      // Don't support absurdly larger orders for now.
+    // Check inputs.  Note that retcode can include SF_ERROR_LOSS
+    // but the program can keep going in that case.
+    retcode = check_modified_fcn_domain(m,q);
+    if (retcode == SF_ERROR_DOMAIN) {
       *ms2 = std::numeric_limits<double>::quiet_NaN();
       *ms2d = std::numeric_limits<double>::quiet_NaN();
-      return SF_ERROR_DOMAIN;
+      return retcode;
     }
-
-    if (q<0) {
-      *ms2 = std::numeric_limits<double>::quiet_NaN();
-      *ms2d = std::numeric_limits<double>::quiet_NaN();
-      return SF_ERROR_DOMAIN; // q<0 is unimplemented
-    }
-
-    // Don't need to return immediately from these.
-    if (abs(q)>1.0e3d) retcode = SF_ERROR_LOSS;
-    if (m>15 && q>0.1d) retcode = SF_ERROR_LOSS;
 
     // I find the peak Fourier coeff tracks m.  Therefore,
     // adjust the matrix size based on order m.  Later make this
@@ -1311,42 +1155,21 @@ namespace mathieu {
     double expmu = exp(-u);
     double s = sqq*expmu;
     double t = sqq*exppu;
-      
-    // This is used for the adaptive computation.
-    // I set the offset used in Bessel fcn depending upon order m.
-    // The idea comes from the book "Accurate Computation of Mathieu Functions",
-    // Malcolm M. Bibby & Andrew F. Peterson.  Also used in the paper
-    // "Accurate calculation of the modified Mathieu functions of
-    // integer order", Van Buren & Boisvert.
-    if ( (m>5 && q<.001) || 
-	 (m>7 && q<.01) || 
-	 (m>10 && q<.1) || 
-	 (m>15 && q<1)  || 
-	 (m>20 && q<10) || 
-	 (m>30 && q<100) ) {
-      c = m/2;
-	} else {
-      c = 0;
-    }
-    c = 0;
+
+    // Set offset c for adaptive calc.
+    //c = set_adaptive_offset_c(m, q);
+    c = 0; // Turn off adaptive c in modms2 for now ...
     
     // Use different coeffs depending upon whether m is even or odd.
     if (m % 2 == 0) {
-      // Even
+      // Even order m.
 
       // Get coeff vector for even modms2
-      double *BB = (double *) calloc(N, sizeof(double));
-      if (BB == NULL) {
-	*ms2 = std::numeric_limits<double>::quiet_NaN();
-	*ms2d = std::numeric_limits<double>::quiet_NaN();
-	return SF_ERROR_MEMORY;
-      }
-
-      retcode = mathieu_coeffs_oe(N, q, m, BB);
+      std::vector<double> BB(N);
+      retcode = mathieu_coeffs_oe(N, q, m, BB.data());
       if (retcode != SF_ERROR_OK) {
 	*ms2 = std::numeric_limits<double>::quiet_NaN();
 	*ms2d = std::numeric_limits<double>::quiet_NaN();
-	free(BB);
 	return retcode;
       }
       
@@ -1456,24 +1279,15 @@ namespace mathieu {
 	*ms2d = -sqq*(*ms2d)/BB[c];
       }
 
-      free(BB);
-
     } else {
-      // Odd -- m = 1, 3, 5, 7 ...
+      // Odd order -- m = 1, 3, 5, 7 ...
 
-      // Get coeff vector for even modms2
-      double *BB = (double *) calloc(N, sizeof(double));
-      if (BB == NULL) {
-	*ms2 = std::numeric_limits<double>::quiet_NaN();
-	*ms2d = std::numeric_limits<double>::quiet_NaN();
-	return SF_ERROR_MEMORY;
-      }
-      
-      retcode = mathieu_coeffs_oo(N, q, m, BB);
+      // Get coeff vector for odd modms2
+      std::vector<double> BB(N);
+      retcode = mathieu_coeffs_oo(N, q, m, BB.data());
       if (retcode != SF_ERROR_OK) {
 	*ms2 = std::numeric_limits<double>::quiet_NaN();
 	*ms2d = std::numeric_limits<double>::quiet_NaN();
-	free(BB);
 	return retcode;
       }
       
@@ -1579,13 +1393,77 @@ namespace mathieu {
 	*ms2d = -sqq*(*ms2d)/BB[c];
       } 
       
-      free(BB);
    }
 
     return retcode;
   } // int mathieu_modms2
  
+  //================================================================
+  // Helper fcns -- these help reduce the amount of redundant code.
 
+  int check_angular_fcn_domain(int m, double q) {
+    // Verify inputs are OK.  If not indicate err.
+    int retcode = SF_ERROR_OK;
+    
+    if (m>500) {
+      // Don't support absurdly larger orders for now.
+      return SF_ERROR_DOMAIN;
+    }
+
+    // abs(q) > 1000 leads to low accuracy.
+    if (abs(q)>1.0e3d) retcode = SF_ERROR_LOSS;
+      
+    return retcode;
+  }
+
+  //---------------------------------------------------
+  int check_modified_fcn_domain(int m, double q) {
+    int retcode = SF_ERROR_OK;
+    
+    // Check input domain and flag any problems
+    if (m>500) {
+      return SF_ERROR_DOMAIN;
+    }
+
+    if (q<0) {
+      return SF_ERROR_DOMAIN; // q<0 is unimplemented
+    }
+
+    // Don't need to bail out of main computation for these, just set retcode.
+    if (abs(q)>1.0e3d) retcode = SF_ERROR_LOSS;  // q>1000 is inaccurate
+    if (m>15 && q>0.1d) retcode = SF_ERROR_LOSS;
+
+    return retcode;
+  }
+  
+  //---------------------------------------------------
+  int set_adaptive_offset_c(int m, double q) {
+    // This is used to set the c used in the adaptive computation.
+    // I set the offset used in Bessel fcn depending upon order m
+    // and shape/frequency parameter q.  This improves the accuracy
+    // for larger values of m.
+    // The idea comes from the book "Accurate Computation of Mathieu Functions",
+    // Malcolm M. Bibby & Andrew F. Peterson.  Also used in the paper
+    // "Accurate calculation of the modified Mathieu functions of
+    // integer order", Van Buren & Boisvert.  The values I use here
+    // were found from experiment using my Matlab prototype.  However,
+    // better values are likely -- finding them is a future project.
+    int c;
+    
+    if ( (m>5 && q<.001) || 
+	 (m>7 && q<.01) || 
+	 (m>10 && q<.1) || 
+	 (m>15 && q<1)  || 
+	 (m>20 && q<10) || 
+	 (m>30 && q<100) ) {
+      c = m/2;
+    } else {
+      c = 0;
+    }
+
+    return c;
+  }
+    
 
 } // namespace mathieu
 } // namespace xsf

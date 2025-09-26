@@ -11,6 +11,8 @@
  * of the Mathieu functions for Scipy.  This file holds helpers
  * to the Bessel J and Y functions and also returns derivatives
  * of those fcns.
+ *
+ * Stuart Brorson -- Summer and Fall 2025.
  * 
  */
 
@@ -20,7 +22,7 @@ namespace mathieu {
   //==================================================================
   double besselj(int k, double z) {
     // This is just a thin wrapper around the Bessel impl in the
-    // std library.
+    // xsf library.
     double v = (double) k;
     return xsf::cyl_bessel_j(v, z);
   }
@@ -28,7 +30,7 @@ namespace mathieu {
   //==================================================================
   double bessely(int k, double z) {
     // This is just a thin wrapper around the Bessel impl in the
-    // std library.
+    // xsf library.
     double v = (double) k;
     return xsf::cyl_bessel_y(v, z);
   }
